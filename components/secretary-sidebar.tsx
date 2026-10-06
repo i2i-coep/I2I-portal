@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
+import { ChangePasswordButton } from "./change-password-modal";
 
 const COMPETITION_FLOW = [
   { href: "/portal/secretary/phase-1", label: "Phase 1 – Registration", n: 1 },
@@ -102,9 +103,10 @@ function NavLinks({
       <div className="mt-auto border-t border-line pt-4">
         <p className="px-3 text-sm font-medium text-ink">{name}</p>
         <p className="px-3 text-xs text-muted">{email}</p>
+        <ChangePasswordButton className="mt-2 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink-light hover:bg-paper" />
         <button
           onClick={onLogout}
-          className="mt-2 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-400 hover:bg-red-500/10"
+          className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-400 hover:bg-red-500/10"
         >
           Log out
         </button>
