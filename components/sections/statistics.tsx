@@ -1,17 +1,19 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Rocket, Building2, Users, Award } from 'lucide-react'
+import { Rocket, Building2, Users, Award, GraduationCap, Handshake } from 'lucide-react'
 import { Section, SectionHeader } from '@/components/section'
 import { Counter } from '@/components/counter'
 import { GradientOrbs } from '@/components/background-fx'
 import { StaggerGroup, StaggerItem } from '@/components/motion-primitives'
 
 const stats = [
-  { icon: Users, to: 10000, suffix: '+', label: 'Innovators engaged', hint: 'Participants over 10 years' },
-  { icon: Rocket, to: 2000, suffix: '+', label: 'Projects developed', hint: 'Across all cohorts' },
-  { icon: Building2, to: 50, suffix: '+', label: 'Colleges & institutes', hint: 'Across Maharashtra & India' },
-  { icon: Award, to: 10, suffix: '+', label: 'Years running', hint: 'Since inception' },
+  { icon: Users, to: 1000000, suffix: '+', label: 'People impacted', hint: 'Across 17 years of impact' },
+  { icon: Rocket, to: 3600, suffix: '+', label: 'Projects developed', hint: 'Across all cohorts' },
+  { icon: Building2, to: 310, suffix: '+', label: 'Colleges & institutes', hint: 'Across Maharashtra & India' },
+  { icon: GraduationCap, to: 1550, suffix: '+', label: 'Alumni network', hint: 'Carrying i2i forward' },
+  { icon: Handshake, to: 700, suffix: '+', label: 'Ambassadors', hint: 'Powering outreach nationwide' },
+  { icon: Award, to: 17, suffix: '+', label: 'Years running', hint: 'Since inception' },
 ]
 
 export function Statistics() {
@@ -27,7 +29,7 @@ export function Statistics() {
           align="center"
         />
 
-        <StaggerGroup className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StaggerGroup className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stats.map((s) => (
             <StaggerItem key={s.label}>
               <motion.div
