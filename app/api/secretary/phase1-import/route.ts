@@ -37,22 +37,35 @@ function makePassword(leaderName: string, projectCode: string): string {
   return `${cleanLast}_${cleanCode}`;
 }
 
+// Aliases include both generic phrasing and the exact wording used on i2i's
+// live Phase 1 Google Form, since Google exports response spreadsheets with
+// the question text verbatim as the column header.
 const REQUIRED_COLUMNS: Record<string, string[]> = {
-  teamName: ["Team Name", "Project Team Name"],
-  leaderName: ["Leader Name", "Team Leader Name", "Full Name", "Name"],
-  leaderEmail: ["Leader Email", "Email", "Email Address", "Email ID"],
-  leaderPhone: ["Leader Phone", "Phone", "Phone Number", "Mobile Number", "Contact Number"],
+  leaderName: ["Leader Name", "Team Leader Name", "Team Leader Full Name", "Full Name", "Name"],
+  leaderEmail: ["Leader Email", "Team Leader Email", "Email", "Email Address", "Email ID"],
+  leaderPhone: [
+    "Leader Phone",
+    "Team Leader Phone Number",
+    "Phone",
+    "Phone Number",
+    "Mobile Number",
+    "Contact Number",
+  ],
   state: ["State"],
   city: ["City"],
   collegeName: ["College Name", "College/Institute Name", "Institute Name"],
-  sector: ["Sector", "Sector Selection"],
+  sector: ["Sector", "Sector Selection", "Which sector is your project in?"],
   projectName: ["Project Name", "Project Title"],
   problemStatement: ["Problem Statement"],
-  proposedSolution: ["Proposed Solution"],
-  targetBeneficiaries: ["Target Beneficiaries"],
+  proposedSolution: ["Proposed Solution", "Proposed solution (~150 words)"],
 };
 
+// Team Name and Target Beneficiaries aren't on the live Google Form at all
+// (it never asks for either), so they're optional here with sensible
+// defaults below rather than blocking every row on columns that don't exist.
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
+  teamName: ["Team Name", "Project Team Name"],
+  targetBeneficiaries: ["Target Beneficiaries"],
   teamSize: ["Team Size", "Number of Members", "No. of Members"],
   leaderGender: ["Leader Gender", "Gender"],
   leaderDob: ["Leader DOB", "Date of Birth", "DOB"],
@@ -60,18 +73,22 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   emergencyContactPhone: ["Emergency Contact Phone"],
   heardAboutUs: ["Heard About Us", "How did you hear about I2I?"],
   collegeType: ["College Type"],
-  facultyContactName: ["Faculty Contact Name", "Faculty / Point of Contact Name"],
-  facultyContactPhone: ["Faculty Contact Phone"],
+  facultyContactName: ["Faculty Contact Name", "Faculty / Point of Contact Name", "Faculty / Guide name"],
+  facultyContactPhone: ["Faculty Contact Phone", "Faculty/ Guide contact number"],
   subTheme: ["Sub Theme", "Sub-theme"],
   innovationNotes: ["Innovation Notes", "What makes your approach unique?"],
   ideaStage: ["Idea Stage", "Current stage of your idea"],
-  member2Name: ["Member 2 Name"],
+  // The form only collects one combined "Contact" field per teammate (no
+  // separate email), and calls them "Teammate 1/2" rather than "Member 2/3".
+  member2Name: ["Member 2 Name", "Teammate 1: Name"],
   member2Email: ["Member 2 Email"],
-  member2Phone: ["Member 2 Phone"],
+  member2Phone: ["Member 2 Phone", "Teammate 1: Contact"],
   member2Year: ["Member 2 Year", "Member 2 Year of Study"],
-  member3Name: ["Member 3 Name"],
+  member3Name: ["Member 3 Name", "Teammate 2: Name"],
   member3Email: ["Member 3 Email"],
-  member3Phone: ["Member 3 Phone"],
+  // "Teamamte" matches a live typo in the form's own field name — kept so
+  // the column is still found if that typo is ever fixed or not.
+  member3Phone: ["Member 3 Phone", "Teammate 2: Contact", "Teamamte 2: Contact"],
   member3Year: ["Member 3 Year", "Member 3 Year of Study"],
 };
 
@@ -141,10 +158,23 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: sectors } = await admin.from("sectors").select("id, prefix, display_name");
 
+    // The live form's option text doesn't exactly match either the DB
+    // prefix or display_name for two of the six sectors — map those
+    // specific known phrasings to their prefix before falling back to the
+    // generic equality check.
+    const SECTOR_FORM_ALIASES: Record<string, string> = {
+      "3h-health, hunger & humanity(hhh)": "HHH",
+      entrepreneurship: "ENT",
+    };
+
     function findSector(value: string) {
       const v = value.trim().toLowerCase();
+      const aliasPrefix = SECTOR_FORM_ALIASES[v]?.toLowerCase();
       return (sectors ?? []).find(
-        (s) => s.prefix.toLowerCase() === v || s.display_name.toLowerCase() === v
+        (s) =>
+          (aliasPrefix && s.prefix.toLowerCase() === aliasPrefix) ||
+          s.prefix.toLowerCase() === v ||
+          s.display_name.toLowerCase() === v
       );
     }
 
@@ -154,7 +184,6 @@ export async function POST(request: Request) {
       const row = sheet.getRow(rowNumber);
       const get = (key: string) => cellText(row, cols[key]);
 
-      const teamName = get("teamName");
       const leaderName = get("leaderName");
       const leaderEmail = get("leaderEmail").toLowerCase();
       const leaderPhone = get("leaderPhone");
@@ -165,14 +194,18 @@ export async function POST(request: Request) {
       const projectName = get("projectName");
       const problemStatement = get("problemStatement");
       const proposedSolution = get("proposedSolution");
-      const targetBeneficiaries = get("targetBeneficiaries");
 
       const isBlankRow =
-        !teamName && !leaderName && !leaderEmail && !projectName && !collegeName;
+        !leaderName && !leaderEmail && !projectName && !collegeName;
       if (isBlankRow) continue;
 
+      // Neither column exists on the live form, so these are always
+      // synthesized rather than validated as missing.
+      const teamName = get("teamName") || `${leaderName}'s Team`;
+      const targetBeneficiaries =
+        get("targetBeneficiaries") || "Not collected during Phase 1 registration.";
+
       const missingRequired = [
-        ["Team Name", teamName],
         ["Leader Name", leaderName],
         ["Leader Email", leaderEmail],
         ["Leader Phone", leaderPhone],
@@ -183,7 +216,6 @@ export async function POST(request: Request) {
         ["Project Name", projectName],
         ["Problem Statement", problemStatement],
         ["Proposed Solution", proposedSolution],
-        ["Target Beneficiaries", targetBeneficiaries],
       ].filter(([, v]) => !v);
       if (missingRequired.length > 0) {
         results.push({

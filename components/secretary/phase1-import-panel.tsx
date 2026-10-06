@@ -69,12 +69,15 @@ export function Phase1ImportPanel() {
         and they&apos;ll all be imported together.
       </p>
       <p className="mt-2 text-xs text-muted">
-        Required columns: Team Name, Leader Name, Leader Email, Leader Phone, State, City,
-        College Name, Sector, Project Name, Problem Statement, Proposed Solution, Target
-        Beneficiaries. Optional: Team Size, Leader Gender/DOB, Emergency Contact, College Type,
-        Faculty Contact, Sub Theme, Innovation Notes, Idea Stage, and Member 2/3 Name/Email/
-        Phone/Year. Login = leader email, initial password = lastname_projectcode (lowercased);
-        a confirmation email is queued for each row created.
+        Matches the live Phase 1 Google Form's export automatically — no need to rename
+        columns first. Required: Leader Name, Leader Email, Leader Phone, State, City, College
+        Name, Sector, Project Name, Problem Statement, Proposed Solution. Optional: Team Size,
+        College Type, Faculty/Guide contact, teammate names &amp; contacts. The form doesn&apos;t
+        collect a team name or target beneficiaries, so those are auto-filled (
+        <span className="italic">&quot;[Leader]&apos;s Team&quot;</span> and a placeholder note).
+        Login = leader email,
+        initial password = lastname_projectcode (lowercased); a confirmation email is queued for
+        each row created.
       </p>
 
       <input
