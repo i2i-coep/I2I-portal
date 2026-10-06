@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
+import { ChangePasswordButton } from "./change-password-modal";
 
 export function PortalHeader({
   portalLabel,
@@ -32,12 +33,15 @@ export function PortalHeader({
             <p className="mt-0.5 font-display text-lg font-semibold text-ink">{name}</p>
             <p className="text-xs text-muted capitalize">{roleLabel}</p>
           </div>
-          <button
-            onClick={logout}
-            className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-light transition hover:border-ink hover:text-ink"
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-2">
+            <ChangePasswordButton />
+            <button
+              onClick={logout}
+              className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-light transition hover:border-ink hover:text-ink"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </header>
       <HelpWidget />
