@@ -95,9 +95,9 @@ export function Hero() {
             className="mt-4 grid grid-cols-3 gap-6 border-t border-border pt-6"
           >
             {[
-              { v: '10,000+', l: 'Innovators engaged' },
-              { v: '2,000+', l: 'Projects developed' },
-              { v: '10+', l: 'Years running' },
+              { v: '1,000,000+', l: 'People impacted' },
+              { v: '3,600+', l: 'Projects developed' },
+              { v: '17+', l: 'Years running' },
             ].map((s) => (
               <div key={s.l} className="flex flex-col gap-1">
                 <dt className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
@@ -127,7 +127,7 @@ export function Hero() {
               <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
             </span>
             <span className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Live ecosystem</span> · 10th year running
+              <span className="font-medium text-foreground">Live ecosystem</span> · 17th year running
             </span>
           </div>
         </motion.div>
