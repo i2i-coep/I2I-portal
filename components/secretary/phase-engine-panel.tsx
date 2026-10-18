@@ -87,8 +87,10 @@ export function PhaseEnginePanel({ initialPhases }: { initialPhases: Phase[] }) 
       <h1 className="mt-1 font-display text-2xl font-bold text-ink">Phase Engine</h1>
       <p className="mt-1 text-sm text-muted">
         Open or close each phase, and optionally schedule when it should open/close automatically.
-        The schedule is informational only right now — no page currently checks it to block
-        participant actions, this just controls what the Overview/portal pages could read later.
+        Phase 1 directly gates the public <code>/register</code> page — toggle it closed, or set a
+        past "Scheduled close", and new registrations stop immediately, showing a "Registrations are
+        closed" page instead. Phases 2-4 schedules are informational only for now; nothing else
+        reads them yet.
       </p>
 
       {error && (
