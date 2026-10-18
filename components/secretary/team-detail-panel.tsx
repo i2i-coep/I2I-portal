@@ -37,6 +37,8 @@ type FullTeam = {
 
 type Member = { full_name: string; email: string | null; phone: string | null; year_of_study: string | null; role: string | null };
 
+type Phase1Submission = { pitch_deck_url: string | null; submitted_at: string | null };
+
 export function TeamDetailPanel({
   teamId,
   onClose,
@@ -48,6 +50,7 @@ export function TeamDetailPanel({
 }) {
   const [team, setTeam] = useState<FullTeam | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [phase1, setPhase1] = useState<Phase1Submission | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
@@ -66,9 +69,15 @@ export function TeamDetailPanel({
         .from("team_members")
         .select("full_name, email, phone, year_of_study, role")
         .eq("team_id", teamId),
-    ]).then(([teamRes, membersRes]) => {
+      supabase
+        .from("phase1_submissions")
+        .select("pitch_deck_url, submitted_at")
+        .eq("team_id", teamId)
+        .maybeSingle(),
+    ]).then(([teamRes, membersRes, phase1Res]) => {
       setTeam(teamRes.data as unknown as FullTeam);
       setMembers(membersRes.data ?? []);
+      setPhase1(phase1Res.data ?? null);
       setLoading(false);
     });
   }, [teamId]);
@@ -131,6 +140,24 @@ export function TeamDetailPanel({
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-6">
+              <DetailSection title="Phase 1 Pitch Deck">
+                {phase1?.pitch_deck_url ? (
+                  <div className="col-span-2 flex items-center justify-between rounded-lg border border-marigold/30 bg-marigold/10 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-ink">Pitch deck submitted</p>
+                      <p className="text-xs text-muted">
+                        {phase1.submitted_at
+                          ? `Submitted ${new Date(phase1.submitted_at).toLocaleString()}`
+                          : "Uploaded, not yet marked submitted"}
+                      </p>
+                    </div>
+                    <StoragePdfLink bucket="phase1-uploads" path={phase1.pitch_deck_url} />
+                  </div>
+                ) : (
+                  <p className="col-span-2 text-sm text-muted">Not submitted yet.</p>
+                )}
+              </DetailSection>
+
               <DetailSection title="Team">
                 <Field label="Team name" value={team.team_name} />
                 <Field label="Team size" value={String(team.team_size)} />
@@ -221,6 +248,37 @@ function DetailSection({ title, children }: { title: string; children: React.Rea
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{title}</h3>
       <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">{children}</div>
     </div>
+  );
+}
+
+function StoragePdfLink({ bucket, path }: { bucket: string; path: string }) {
+  const [opening, setOpening] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function open() {
+    setOpening(true);
+    setError(false);
+    try {
+      const supabase = createClient();
+      const { data, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 300);
+      if (signErr || !data?.signedUrl) throw signErr ?? new Error("No signed URL");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("Could not open file:", err);
+      setError(true);
+    } finally {
+      setOpening(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={open}
+      disabled={opening}
+      className="shrink-0 rounded-lg bg-marigold px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-60"
+    >
+      {opening ? "Opening..." : error ? "Retry" : "View PDF"}
+    </button>
   );
 }
 

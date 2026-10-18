@@ -6,6 +6,7 @@ import { FileUploadField } from "./file-upload-field";
 import { OtherDocumentsField, type OtherDocument } from "./other-documents-field";
 import { WeeklyTargets } from "@/components/weekly-targets";
 import { RejectedPanel } from "./rejected-panel";
+import { Phase1SubmissionPanel } from "./phase1-submission-panel";
 
 type Phase2Data = {
   id: string | null;
@@ -83,14 +84,7 @@ export function WorkspaceTab({ teamId, status }: { teamId: string; status: strin
       ) : status === "rejected" ? (
         <RejectedPanel teamId={teamId} />
       ) : (
-        <div className="rounded-2xl border border-dashed border-line bg-surface p-8 text-center">
-          <p className="font-display text-lg font-semibold text-ink">
-            Awaiting Phase 1 shortlisting
-          </p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-            Once the Secretary shortlists your team, your Phase 2 submission form will unlock here.
-          </p>
-        </div>
+        <Phase1SubmissionPanel teamId={teamId} />
       )}
     </div>
   );
