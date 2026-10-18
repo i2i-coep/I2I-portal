@@ -1,11 +1,11 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 
 // Provider: SMTP (Google Workspace or Gmail). Used when EMAIL_PROVIDER=smtp.
 // Workspace gives ~2000 emails/day free; personal Gmail ~500/day.
 // Requires a Google "App Password" (not your normal login password) — set
 // SMTP_USER and SMTP_APP_PASSWORD in your environment.
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
 function getTransporter() {
   if (!transporter) {
