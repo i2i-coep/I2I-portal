@@ -3,13 +3,14 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const BUCKET = "phase2-uploads";
+const DEFAULT_BUCKET = "phase2-uploads";
 
 export type FileKind =
   | "pitch-deck"
   | "bills"
   | "passbook"
-  | "pan";
+  | "pan"
+  | "phase1-ppt";
 
 const KIND_CONFIG: Record<
   FileKind,
@@ -48,6 +49,15 @@ const KIND_CONFIG: Record<
     maxMB: 10,
     mime: ["application/pdf", "image/jpeg", "image/png"],
   },
+  // PDF-only — this is the pre-selection screening upload for all ~550
+  // Phase 1 registrants, so the size cap is kept tight to bound the
+  // aggregate storage footprint (worst case 550 x 10MB = 5.5GB).
+  "phase1-ppt": {
+    accept: ".pdf",
+    extensions: ["pdf"],
+    maxMB: 10,
+    mime: ["application/pdf"],
+  },
 };
 
 function extOf(filename: string) {
@@ -70,6 +80,7 @@ export function FileUploadField({
   required = false,
   currentPath,
   onSaved,
+  bucket = DEFAULT_BUCKET,
 }: {
   teamId: string;
   kind: FileKind;
@@ -78,6 +89,7 @@ export function FileUploadField({
   required?: boolean;
   currentPath: string | null;
   onSaved: (path: string) => void;
+  bucket?: string;
 }) {
   const [path, setPath] = useState(currentPath);
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
@@ -109,7 +121,7 @@ export function FileUploadField({
       const objectPath = `${teamId}/${kind}-${safeName}`;
 
       const { error: uploadErr } = await supabase.storage
-        .from(BUCKET)
+        .from(bucket)
         .upload(objectPath, file, { upsert: true, contentType: file.type || undefined });
 
       if (uploadErr) {
@@ -138,7 +150,7 @@ export function FileUploadField({
     try {
       const supabase = createClient();
       const { data, error: signErr } = await supabase.storage
-        .from(BUCKET)
+        .from(bucket)
         .createSignedUrl(path, 300); // 5 minutes
       if (signErr || !data?.signedUrl) throw signErr ?? new Error("No signed URL returned");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");

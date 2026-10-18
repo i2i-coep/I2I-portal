@@ -12,6 +12,7 @@ type Team = {
   leader_email: string;
   status: string;
   sector_prefix: string;
+  has_pitch_deck: boolean;
 };
 
 const TABS = [
@@ -121,13 +122,14 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
               <th className="px-4 py-3 font-medium">Sector</th>
               <th className="px-4 py-3 font-medium">College</th>
               <th className="px-4 py-3 font-medium">Team Leader</th>
+              <th className="px-4 py-3 font-medium">Pitch Deck</th>
               <th className="px-4 py-3 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-muted">
+                <td colSpan={7} className="px-4 py-10 text-center text-muted">
                   No registrations match this view.
                 </td>
               </tr>
@@ -145,6 +147,17 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
                   <td className="px-4 py-3 text-muted">{t.sector_prefix}</td>
                   <td className="px-4 py-3 text-muted">{t.college_name}</td>
                   <td className="px-4 py-3 text-muted">{t.leader_email}</td>
+                  <td className="px-4 py-3">
+                    {t.has_pitch_deck ? (
+                      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-400">
+                        ✓ Submitted
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-400">
+                        Not yet
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-line bg-paper px-2.5 py-1 text-xs capitalize text-ink-light">
                       {t.status.replace(/_/g, " ")}
