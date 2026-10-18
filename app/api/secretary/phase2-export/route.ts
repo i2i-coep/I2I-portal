@@ -23,6 +23,7 @@ type Row = {
   funding_status: string;
   mentor_requested: boolean | null;
   submitted_at: string | null;
+  phase1_score: number | null;
   pitch_deck_path: string | null;
   bills_path: string | null;
   passbook_path: string | null;
@@ -39,6 +40,7 @@ const HEADER_FILL: ExcelJS.Fill = {
 const COLUMNS: { header: string; key: keyof Row | string; width: number }[] = [
   { header: "Project Code", key: "project_code", width: 16 },
   { header: "Phase 3 Decision", key: "decision", width: 16 },
+  { header: "Phase 1 Score", key: "phase1_score", width: 14 },
   { header: "Project Name", key: "project_name", width: 30 },
   { header: "College", key: "college_name", width: 26 },
   { header: "Team Leader", key: "leader_name", width: 20 },
@@ -90,8 +92,8 @@ export async function GET() {
     const { data: raw, error: queryErr } = await admin
       .from("phase2_applications")
       .select(
-        `id, amount_approved, screening_status, funding_status, mentor_requested, submitted_at,
-         pitch_deck_url, bills_doc_url, passbook_doc_url, pan_doc_url, other_documents,
+        `id, team_id, amount_approved, screening_status, funding_status, mentor_requested, submitted_at,
+         bills_doc_url, passbook_doc_url, pan_doc_url, other_documents,
          teams(project_code, project_name, college_name, leader_name, leader_email, leader_phone, sectors(prefix, display_name))`
       )
       .order("created_at", { ascending: true });
@@ -100,6 +102,11 @@ export async function GET() {
       console.error("Phase 2 export query failed:", queryErr);
       return NextResponse.json({ error: "Could not load Phase 2 data" }, { status: 500 });
     }
+
+    // Pitch deck + chief ambassador score are Phase 1 data — this is the
+    // real Phase 2→3 decision point, so both need to travel with it.
+    const { data: phase1Raw } = await admin.from("phase1_submissions").select("team_id, pitch_deck_url, score");
+    const phase1ByTeam = new Map((phase1Raw ?? []).map((p) => [p.team_id, p]));
 
     const rows: Row[] = (raw ?? []).map((r) => {
       const team = r.teams as unknown as {
@@ -111,6 +118,7 @@ export async function GET() {
         leader_phone: string;
         sectors: { prefix: string; display_name: string } | null;
       } | null;
+      const phase1 = phase1ByTeam.get(r.team_id);
       return {
         project_code: team?.project_code ?? null,
         project_name: team?.project_name ?? "—",
@@ -125,7 +133,8 @@ export async function GET() {
         funding_status: r.funding_status,
         mentor_requested: r.mentor_requested,
         submitted_at: r.submitted_at,
-        pitch_deck_path: r.pitch_deck_url,
+        phase1_score: phase1?.score ?? null,
+        pitch_deck_path: phase1?.pitch_deck_url ?? null,
         bills_path: r.bills_doc_url,
         passbook_path: r.passbook_doc_url,
         pan_path: r.pan_doc_url,
@@ -135,38 +144,46 @@ export async function GET() {
 
     // ---- Batch-sign every uploaded file path in one call per bucket ----
     // (Not every application has uploaded every file, so this list is
-    // usually much smaller than rows.length * 5.)
-    const allPaths = new Set<string>();
+    // usually much smaller than rows.length * 5.) Pitch decks live in
+    // phase1-uploads (the upload moved to Phase 1); everything else is
+    // still in phase2-uploads.
+    const phase2Paths = new Set<string>();
+    const phase1Paths = new Set<string>();
     for (const row of rows) {
-      for (const p of [row.pitch_deck_path, row.bills_path, row.passbook_path, row.pan_path]) {
-        if (p) allPaths.add(p);
+      if (row.pitch_deck_path) phase1Paths.add(row.pitch_deck_path);
+      for (const p of [row.bills_path, row.passbook_path, row.pan_path]) {
+        if (p) phase2Paths.add(p);
       }
       for (const doc of row.other_documents) {
-        if (doc?.path) allPaths.add(doc.path);
+        if (doc?.path) phase2Paths.add(doc.path);
       }
     }
 
-    const signedUrlByPath = new Map<string, string>();
-    if (allPaths.size > 0) {
+    // Keyed by "bucket::path" — the two buckets are independent namespaces,
+    // so a bare path isn't guaranteed unique across both.
+    const signedUrlByKey = new Map<string, string>();
+    async function signBatch(bucket: string, paths: Set<string>) {
+      if (paths.size === 0) return;
       try {
         const { data: signed, error: signErr } = await admin.storage
-          .from(BUCKET)
-          .createSignedUrls(Array.from(allPaths), SIGNED_URL_EXPIRY_SECONDS);
+          .from(bucket)
+          .createSignedUrls(Array.from(paths), SIGNED_URL_EXPIRY_SECONDS);
         if (signErr) throw signErr;
         for (const entry of signed ?? []) {
-          if (entry.signedUrl && entry.path) signedUrlByPath.set(entry.path, entry.signedUrl);
+          if (entry.signedUrl && entry.path) signedUrlByKey.set(`${bucket}::${entry.path}`, entry.signedUrl);
         }
       } catch (err) {
         // Don't fail the whole export just because signing had a hiccup —
         // the Secretary still gets every other column; file links just
         // show "Not available" for that batch instead.
-        console.error("Phase 2 export: batch signed-url generation failed:", err);
+        console.error(`Phase 2 export: batch signed-url generation failed for ${bucket}:`, err);
       }
     }
+    await Promise.all([signBatch(BUCKET, phase2Paths), signBatch("phase1-uploads", phase1Paths)]);
 
-    function link(path: string | null): string | { text: string; hyperlink: string } {
+    function link(bucket: string, path: string | null): string | { text: string; hyperlink: string } {
       if (!path) return "Not uploaded";
-      const url = signedUrlByPath.get(path);
+      const url = signedUrlByKey.get(`${bucket}::${path}`);
       if (!url) return "Link unavailable — check Storage manually";
       return { text: "View", hyperlink: url };
     }
@@ -178,11 +195,11 @@ export async function GET() {
     function otherDocsCell(docs: OtherDoc[]): string | { text: string; hyperlink: string } {
       if (docs.length === 0) return "None";
       if (docs.length === 1) {
-        const url = docs[0].path ? signedUrlByPath.get(docs[0].path) : null;
+        const url = docs[0].path ? signedUrlByKey.get(`${BUCKET}::${docs[0].path}`) : null;
         return url ? { text: docs[0].name, hyperlink: url } : `${docs[0].name}: link unavailable`;
       }
       return docs
-        .map((d) => `${d.name}: ${d.path ? (signedUrlByPath.get(d.path) ?? "link unavailable") : "not uploaded"}`)
+        .map((d) => `${d.name}: ${d.path ? (signedUrlByKey.get(`${BUCKET}::${d.path}`) ?? "link unavailable") : "not uploaded"}`)
         .join("\n");
     }
 
@@ -227,7 +244,11 @@ export async function GET() {
     ];
 
     for (const group of sectorGroups) {
-      const sectorRows = rows.filter((r) => r.sector_prefix === group.prefix);
+      // Highest Phase 1 score first — that's the signal feeding this
+      // Phase 2→3 call, so the Secretary sees top-rated projects first.
+      const sectorRows = rows
+        .filter((r) => r.sector_prefix === group.prefix)
+        .sort((a, b) => (b.phase1_score ?? -1) - (a.phase1_score ?? -1));
       if (sectorRows.length === 0) continue;
 
       // Sheet names are capped at 31 chars and can't contain []:*?/\
@@ -248,6 +269,7 @@ export async function GET() {
         const newRow = sheet.addRow({
           project_code: r.project_code ?? "Pending",
           decision: existingDecision,
+          phase1_score: r.phase1_score ?? "",
           project_name: r.project_name,
           college_name: r.college_name,
           leader_name: r.leader_name,
@@ -258,10 +280,10 @@ export async function GET() {
           screening_status: r.screening_status,
           funding_status: r.funding_status,
           mentor_requested_label: r.mentor_requested === true ? "Yes" : r.mentor_requested === false ? "No" : "Not answered",
-          pitch_deck_link: link(r.pitch_deck_path),
-          bills_link: link(r.bills_path),
-          passbook_link: link(r.passbook_path),
-          pan_link: link(r.pan_path),
+          pitch_deck_link: link("phase1-uploads", r.pitch_deck_path),
+          bills_link: link(BUCKET, r.bills_path),
+          passbook_link: link(BUCKET, r.passbook_path),
+          pan_link: link(BUCKET, r.pan_path),
           other_docs_links: otherDocsCell(r.other_documents),
         });
         // Real dropdown in Excel/Sheets for the decision column — keeps the

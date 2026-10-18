@@ -8,9 +8,14 @@ export default async function Phase2Page() {
   const { data: rowsRaw } = await supabase
     .from("phase2_applications")
     .select(
-      "id, team_id, bills_doc_url, pitch_deck_url, mentor_requested, submitted_at, screening_status, funding_status, amount_approved, teams(project_code, project_name, college_name, sectors(prefix))"
+      "id, team_id, bills_doc_url, mentor_requested, submitted_at, screening_status, funding_status, amount_approved, teams(project_code, project_name, college_name, sectors(prefix))"
     )
     .order("created_at", { ascending: false });
+
+  // Pitch deck + the chief ambassador's score are Phase 1 data — the upload
+  // moved there, and the score is what should inform this Phase 2→3 call.
+  const { data: phase1Raw } = await supabase.from("phase1_submissions").select("team_id, pitch_deck_url, score");
+  const phase1ByTeam = new Map((phase1Raw ?? []).map((p) => [p.team_id, p]));
 
   const rows = (rowsRaw ?? []).map((r) => {
     const team = r.teams as unknown as {
@@ -19,6 +24,7 @@ export default async function Phase2Page() {
       college_name: string;
       sectors: { prefix: string } | null;
     } | null;
+    const phase1 = phase1ByTeam.get(r.team_id);
     return {
       application_id: r.id,
       team_id: r.team_id,
@@ -28,7 +34,8 @@ export default async function Phase2Page() {
       college_name: team?.college_name ?? "—",
       leader_email: "",
       bills_doc_url: r.bills_doc_url,
-      pitch_deck_url: r.pitch_deck_url,
+      pitch_deck_url: phase1?.pitch_deck_url ?? null,
+      phase1_score: phase1?.score ?? null,
       mentor_requested: r.mentor_requested,
       submitted_at: r.submitted_at,
       screening_status: r.screening_status,

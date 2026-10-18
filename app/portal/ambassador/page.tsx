@@ -44,21 +44,23 @@ export default async function AmbassadorPortal() {
         .order("created_at", { ascending: false })
     : { data: [] };
 
-  // Phase 2 pitch deck + approved funding, joined manually since it's a
-  // separate table (kept simple rather than a Postgres view for now).
+  // Phase 1 pitch deck (the upload moved there) + Phase 2 approved funding,
+  // joined manually since they're separate tables (kept simple rather than
+  // a Postgres view for now).
   const teamIds = (teamsRaw ?? []).map((t) => t.id);
-  const { data: phase2 } = teamIds.length
-    ? await supabase
-        .from("phase2_applications")
-        .select("team_id, pitch_deck_url, amount_approved")
-        .in("team_id", teamIds)
-    : { data: [] };
+  const [{ data: phase1ForPortfolio }, { data: phase2 }] = teamIds.length
+    ? await Promise.all([
+        supabase.from("phase1_submissions").select("team_id, pitch_deck_url").in("team_id", teamIds),
+        supabase.from("phase2_applications").select("team_id, amount_approved").in("team_id", teamIds),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   const teams = (teamsRaw ?? []).map((t) => {
+    const p1 = phase1ForPortfolio?.find((p) => p.team_id === t.id);
     const p2 = phase2?.find((p) => p.team_id === t.id);
     return {
       ...t,
-      pitch_deck_url: p2?.pitch_deck_url ?? null,
+      pitch_deck_url: p1?.pitch_deck_url ?? null,
       amount_approved: p2?.amount_approved ?? null,
     };
   });
@@ -69,9 +71,15 @@ export default async function AmbassadorPortal() {
   const { data: reviewRowsRaw } = await supabase
     .from("phase2_applications")
     .select(
-      "id, team_id, bills_doc_url, pitch_deck_url, mentor_requested, screening_status, funding_status, amount_approved, teams(project_code, project_name, college_name, sectors(prefix))"
+      "id, team_id, bills_doc_url, mentor_requested, screening_status, funding_status, amount_approved, teams(project_code, project_name, college_name, sectors(prefix))"
     )
     .order("created_at", { ascending: false });
+
+  const reviewTeamIds = (reviewRowsRaw ?? []).map((r) => r.team_id);
+  const { data: phase1ForReview } = reviewTeamIds.length
+    ? await supabase.from("phase1_submissions").select("team_id, pitch_deck_url").in("team_id", reviewTeamIds)
+    : { data: [] };
+  const phase1UrlByTeam = new Map((phase1ForReview ?? []).map((p) => [p.team_id, p.pitch_deck_url]));
 
   const reviewRows = (reviewRowsRaw ?? []).map((r) => {
     const team = r.teams as unknown as {
@@ -88,7 +96,7 @@ export default async function AmbassadorPortal() {
       sector_prefix: team?.sectors?.prefix ?? "—",
       college_name: team?.college_name ?? "—",
       bills_doc_url: r.bills_doc_url,
-      pitch_deck_url: r.pitch_deck_url,
+      pitch_deck_url: phase1UrlByTeam.get(r.team_id) ?? null,
       mentor_requested: r.mentor_requested,
       screening_status: r.screening_status,
       funding_status: r.funding_status,
