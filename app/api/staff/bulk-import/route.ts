@@ -52,8 +52,11 @@ export async function POST(request: Request) {
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "No file received. Attach the .xlsx list." }, { status: 400 });
     }
-    if (role !== "mentor" && role !== "ambassador") {
-      return NextResponse.json({ error: "Role must be 'mentor' or 'ambassador'." }, { status: 400 });
+    if (role !== "ambassador") {
+      return NextResponse.json(
+        { error: "Mentors are imported with sector preferences — use the Mentors spreadsheet uploader above." },
+        { status: 400 }
+      );
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json({ error: "File is too large — is this the right spreadsheet?" }, { status: 400 });

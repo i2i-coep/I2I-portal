@@ -9,6 +9,7 @@ type StaffCapacity = { staff_id: string; full_name: string; role: string; curren
 export function AssignmentPanel({ unassignedTeams }: { unassignedTeams: Team[] }) {
   const [mentors, setMentors] = useState<StaffCapacity[]>([]);
   const [ambassadors, setAmbassadors] = useState<StaffCapacity[]>([]);
+  const [mentorTopPref, setMentorTopPref] = useState<Map<string, string>>(new Map());
   const [selectedTeam, setSelectedTeam] = useState(unassignedTeams[0]?.id ?? "");
   const [selectedMentor, setSelectedMentor] = useState("");
   const [selectedAmbassador, setSelectedAmbassador] = useState("");
@@ -24,6 +25,18 @@ export function AssignmentPanel({ unassignedTeams }: { unassignedTeams: Team[] }
       .then(({ data }) => {
         setMentors((data ?? []).filter((s) => s.role === "mentor"));
         setAmbassadors((data ?? []).filter((s) => ["ambassador", "chief_ambassador"].includes(s.role)));
+      });
+    supabase
+      .from("mentor_sector_preferences")
+      .select("staff_id, priority, sectors(prefix)")
+      .eq("priority", 1)
+      .then(({ data }) => {
+        const map = new Map<string, string>();
+        for (const row of data ?? []) {
+          const prefix = (row.sectors as unknown as { prefix: string } | null)?.prefix;
+          if (prefix) map.set(row.staff_id, prefix);
+        }
+        setMentorTopPref(map);
       });
   }, []);
 
@@ -103,7 +116,7 @@ export function AssignmentPanel({ unassignedTeams }: { unassignedTeams: Team[] }
           <option value="">Select mentor</option>
           {mentors.map((m) => (
             <option key={m.staff_id} value={m.staff_id} disabled={m.remaining_capacity <= 0}>
-              {m.full_name} ({m.current_projects}/3)
+              {m.full_name} ({m.current_projects}/3){mentorTopPref.has(m.staff_id) ? ` — 1st pref: ${mentorTopPref.get(m.staff_id)}` : ""}
             </option>
           ))}
         </select>
