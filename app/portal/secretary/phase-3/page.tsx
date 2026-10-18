@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AssignmentPanel } from "@/components/secretary/assignment-panel";
+import { MentorAutoMatchPanel } from "@/components/secretary/mentor-auto-match-panel";
 import { TimelineLockPanel } from "@/components/secretary/timeline-lock-panel";
 
 export default async function Phase3Page() {
@@ -55,6 +56,10 @@ export default async function Phase3Page() {
       <p className="mt-1 text-sm text-muted">
         Review internal feedback logs registered by Mentors &amp; Ambassadors.
       </p>
+
+      <div className="mt-6">
+        <MentorAutoMatchPanel />
+      </div>
 
       <div className="mt-6">
         <AssignmentPanel unassignedTeams={unassignedTeams} />
