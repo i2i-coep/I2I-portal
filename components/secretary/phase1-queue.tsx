@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TeamDetailPanel } from "./team-detail-panel";
 
@@ -13,6 +14,7 @@ type Team = {
   status: string;
   sector_prefix: string;
   has_pitch_deck: boolean;
+  score: number | null;
 };
 
 const TABS = [
@@ -23,11 +25,25 @@ const TABS = [
 ] as const;
 
 export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
+  const router = useRouter();
   const [teams, setTeams] = useState(initialTeams);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("all");
   const [search, setSearch] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    accepted: number;
+    rejected: number;
+    alreadyDecided: number;
+    notFound: string[];
+    unrecognizedDecisions: number;
+    message: string;
+  } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const counts = {
     all: teams.length,
@@ -71,6 +87,55 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
     setBulkLoading(false);
   }
 
+  async function exportSpreadsheet() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const res = await fetch("/api/secretary/phase1-decisions-export");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Export failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `i2i-phase1-decisions-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Phase 1 spreadsheet export failed:", err);
+      setExportError(err instanceof Error ? err.message : "Export failed. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function importDecisions(file: File) {
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/secretary/phase1-decisions-import", { method: "POST", body });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(json?.error || `Import failed (${res.status})`);
+      }
+      setImportResult(json);
+      router.refresh();
+    } catch (err) {
+      console.error("Phase 1 decisions import failed:", err);
+      setImportError(err instanceof Error ? err.message : "Import failed. Try again.");
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -81,14 +146,68 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
             Review all registered team entries. Shortlist eligible candidates to unlock Phase 2.
           </p>
         </div>
-        <button
-          onClick={makeAllEligible}
-          disabled={bulkLoading || counts.registered === 0}
-          className="whitespace-nowrap rounded-lg bg-marigold px-4 py-2.5 text-sm font-semibold text-ink disabled:opacity-50"
-        >
-          {bulkLoading ? "Updating..." : "⚡ Make All Phase 1 Eligible"}
-        </button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 sm:items-end">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={exportSpreadsheet}
+              disabled={exporting || teams.length === 0}
+              className="whitespace-nowrap rounded-lg bg-marigold px-4 py-2.5 text-sm font-semibold text-ink disabled:opacity-50"
+            >
+              {exporting ? "Preparing..." : "⬇ Download Spreadsheet"}
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              id="phase1-import-input"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) importDecisions(file);
+              }}
+            />
+            <label
+              htmlFor="phase1-import-input"
+              className={`cursor-pointer whitespace-nowrap rounded-lg border border-line px-4 py-2.5 text-center text-sm font-semibold text-ink-light transition ${
+                importing ? "cursor-not-allowed opacity-60" : "hover:border-marigold hover:text-marigold"
+              }`}
+              onClick={(e) => importing && e.preventDefault()}
+            >
+              {importing ? "Importing..." : "⬆ Upload Reviewed Spreadsheet"}
+            </label>
+            <button
+              onClick={makeAllEligible}
+              disabled={bulkLoading || counts.registered === 0}
+              className="whitespace-nowrap rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink-light hover:border-marigold hover:text-marigold disabled:opacity-50"
+            >
+              {bulkLoading ? "Updating..." : "⚡ Make All Phase 1 Eligible"}
+            </button>
+          </div>
+          {exportError && <p className="max-w-xs text-right text-xs font-medium text-red-500">{exportError}</p>}
+          {importError && <p className="max-w-xs text-right text-xs font-medium text-red-500">{importError}</p>}
+        </div>
       </div>
+
+      {importResult && (
+        <div className="mt-4 rounded-xl border border-marigold/30 bg-marigold/10 p-4 text-sm">
+          <p className="font-medium text-ink">{importResult.message}</p>
+          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-light">
+            <span>✓ Accepted → Phase 2: <strong>{importResult.accepted}</strong></span>
+            <span>✕ Rejected: <strong>{importResult.rejected}</strong></span>
+            {importResult.alreadyDecided > 0 && (
+              <span>⏭ Skipped (already decided previously): <strong>{importResult.alreadyDecided}</strong></span>
+            )}
+            {importResult.unrecognizedDecisions > 0 && (
+              <span>⚠ Unrecognized decision text: <strong>{importResult.unrecognizedDecisions}</strong> (use the dropdown — Accept/Reject only)</span>
+            )}
+          </div>
+          {importResult.notFound.length > 0 && (
+            <p className="mt-1.5 text-xs text-red-500">
+              Project codes not found: {importResult.notFound.join(", ")}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-1 overflow-x-auto rounded-lg border border-line bg-surface p-1">
@@ -123,13 +242,14 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
               <th className="px-4 py-3 font-medium">College</th>
               <th className="px-4 py-3 font-medium">Team Leader</th>
               <th className="px-4 py-3 font-medium">Pitch Deck</th>
+              <th className="px-4 py-3 font-medium">Score</th>
               <th className="px-4 py-3 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted">
+                <td colSpan={8} className="px-4 py-10 text-center text-muted">
                   No registrations match this view.
                 </td>
               </tr>
@@ -156,6 +276,13 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
                       <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-400">
                         Not yet
                       </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {t.score != null ? (
+                      <span className="font-display font-semibold text-ink">{t.score}/10</span>
+                    ) : (
+                      <span className="text-muted">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
