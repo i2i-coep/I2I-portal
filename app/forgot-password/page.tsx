@@ -14,6 +14,23 @@ export default function ForgotPasswordPage() {
   async function submit() {
     setError(null);
     setLoading(true);
+
+    try {
+      const rateLimitRes = await fetch("/api/auth/rate-limit-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "forgot-password", email }),
+      });
+      if (!rateLimitRes.ok) {
+        const body = await rateLimitRes.json().catch(() => null);
+        setError(body?.error || "Too many attempts. Please try again later.");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Network hiccup on the rate-limit pre-check — don't block the reset over it.
+    }
+
     const supabase = createClient();
     const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/reset-password`,

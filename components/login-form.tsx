@@ -29,6 +29,22 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
+    try {
+      const rateLimitRes = await fetch("/api/auth/rate-limit-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", email }),
+      });
+      if (!rateLimitRes.ok) {
+        const body = await rateLimitRes.json().catch(() => null);
+        setError(body?.error || "Too many attempts. Please try again later.");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Network hiccup on the rate-limit pre-check — don't block login over it.
+    }
+
     const supabase = createClient(rememberMe);
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
 
