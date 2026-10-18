@@ -45,6 +45,30 @@ type Message = {
   created_at: string;
 };
 
+function PitchDeckLink({ path }: { path: string }) {
+  const [opening, setOpening] = useState(false);
+
+  async function open() {
+    setOpening(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.storage.from("phase1-uploads").createSignedUrl(path, 300);
+      if (error || !data?.signedUrl) throw error ?? new Error("No URL");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("Could not open pitch deck:", err);
+    } finally {
+      setOpening(false);
+    }
+  }
+
+  return (
+    <button onClick={open} disabled={opening} className="text-marigold underline disabled:opacity-60">
+      {opening ? "Opening..." : "View Pitch Deck"}
+    </button>
+  );
+}
+
 export function PortfolioWorkspace({
   teams,
   role,
@@ -202,15 +226,7 @@ export function PortfolioWorkspace({
                   Approved Funding: ₹{selected.amount_approved}
                 </span>
               )}
-              {selected.pitch_deck_url && (
-                <a
-                  href={selected.pitch_deck_url}
-                  target="_blank"
-                  className="text-marigold underline"
-                >
-                  View Pitch Deck
-                </a>
-              )}
+              {selected.pitch_deck_url && <PitchDeckLink path={selected.pitch_deck_url} />}
             </div>
           </div>
 

@@ -28,18 +28,19 @@ export default async function MentorPortal() {
     .order("created_at", { ascending: false });
 
   const teamIds = (teamsRaw ?? []).map((t) => t.id);
-  const { data: phase2 } = teamIds.length
-    ? await supabase
-        .from("phase2_applications")
-        .select("team_id, pitch_deck_url, amount_approved")
-        .in("team_id", teamIds)
-    : { data: [] };
+  const [{ data: phase1 }, { data: phase2 }] = teamIds.length
+    ? await Promise.all([
+        supabase.from("phase1_submissions").select("team_id, pitch_deck_url").in("team_id", teamIds),
+        supabase.from("phase2_applications").select("team_id, amount_approved").in("team_id", teamIds),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   const teams = (teamsRaw ?? []).map((t) => {
+    const p1 = phase1?.find((p) => p.team_id === t.id);
     const p2 = phase2?.find((p) => p.team_id === t.id);
     return {
       ...t,
-      pitch_deck_url: p2?.pitch_deck_url ?? null,
+      pitch_deck_url: p1?.pitch_deck_url ?? null,
       amount_approved: p2?.amount_approved ?? null,
     };
   });

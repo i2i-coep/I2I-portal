@@ -19,14 +19,14 @@ type Row = {
   amount_approved: number | null;
 };
 
-function StorageLink({ path }: { path: string }) {
+function StorageLink({ bucket, path }: { bucket: string; path: string }) {
   const [opening, setOpening] = useState(false);
 
   async function open() {
     setOpening(true);
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.storage.from("phase2-uploads").createSignedUrl(path, 300);
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 300);
       if (error || !data?.signedUrl) throw error ?? new Error("No URL");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (err) {
@@ -130,10 +130,10 @@ export function Phase2ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
                   <p className="text-xs text-muted">{r.college_name}</p>
                 </td>
                 <td className="px-4 py-3">
-                  {r.pitch_deck_url ? <StorageLink path={r.pitch_deck_url} /> : <span className="text-muted">None</span>}
+                  {r.pitch_deck_url ? <StorageLink bucket="phase1-uploads" path={r.pitch_deck_url} /> : <span className="text-muted">None</span>}
                 </td>
                 <td className="px-4 py-3">
-                  {r.bills_doc_url ? <StorageLink path={r.bills_doc_url} /> : <span className="text-muted">None</span>}
+                  {r.bills_doc_url ? <StorageLink bucket="phase2-uploads" path={r.bills_doc_url} /> : <span className="text-muted">None</span>}
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {r.mentor_requested === true ? "Yes" : r.mentor_requested === false ? "No" : "—"}

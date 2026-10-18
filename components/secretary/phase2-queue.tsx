@@ -15,6 +15,7 @@ type Row = {
   leader_email: string;
   bills_doc_url: string | null;
   pitch_deck_url: string | null;
+  phase1_score: number | null;
   mentor_requested: boolean | null;
   submitted_at: string | null;
   screening_status: string;
@@ -265,6 +266,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
               <th className="px-4 py-3 font-medium">Project Name</th>
               <th className="px-4 py-3 font-medium">Sector</th>
               <th className="px-4 py-3 font-medium">Institute</th>
+              <th className="px-4 py-3 font-medium">Phase 1 Score</th>
               <th className="px-4 py-3 font-medium">Pitch Deck</th>
               <th className="px-4 py-3 font-medium">Bills</th>
               <th className="px-4 py-3 font-medium">Mentor?</th>
@@ -275,7 +277,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-muted">
+                <td colSpan={10} className="px-4 py-10 text-center text-muted">
                   No proposals match this view.
                 </td>
               </tr>
@@ -289,15 +291,22 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
                   <td className="px-4 py-3 text-muted">{r.sector_prefix}</td>
                   <td className="px-4 py-3 text-muted">{r.college_name}</td>
                   <td className="px-4 py-3">
+                    {r.phase1_score != null ? (
+                      <span className="font-display font-semibold text-ink">{r.phase1_score}/10</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     {r.pitch_deck_url ? (
-                      <StorageLink path={r.pitch_deck_url} />
+                      <StorageLink bucket="phase1-uploads" path={r.pitch_deck_url} />
                     ) : (
                       <span className="text-muted">None</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     {r.bills_doc_url ? (
-                      <StorageLink path={r.bills_doc_url} />
+                      <StorageLink bucket="phase2-uploads" path={r.bills_doc_url} />
                     ) : (
                       <span className="text-muted">None</span>
                     )}
@@ -369,7 +378,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
   );
 }
 
-function StorageLink({ path }: { path: string }) {
+function StorageLink({ bucket, path }: { bucket: string; path: string }) {
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState(false);
 
@@ -379,7 +388,7 @@ function StorageLink({ path }: { path: string }) {
     try {
       const supabase = createClient();
       const { data, error: signErr } = await supabase.storage
-        .from("phase2-uploads")
+        .from(bucket)
         .createSignedUrl(path, 300);
       if (signErr || !data?.signedUrl) throw signErr ?? new Error("No URL");
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
