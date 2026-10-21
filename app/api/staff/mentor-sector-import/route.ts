@@ -18,7 +18,23 @@ function findColumn(headerRow: ExcelJS.Row, ...names: string[]): number | null {
 function cellText(row: ExcelJS.Row, col: number | null): string {
   if (!col) return "";
   const v = row.getCell(col).value;
-  return v == null ? "" : String(v).trim();
+  if (v == null) return "";
+  if (typeof v === "object" && !(v instanceof Date)) {
+    // ExcelJS represents hyperlinks, rich text, and formulas as objects
+    // rather than plain strings — e.g. typing an email directly into a
+    // cell often gets auto-converted to a hyperlink by Excel/Sheets.
+    // Pull out the actual text instead of letting it stringify to
+    // "[object Object]", which silently corrupts the value.
+    const obj = v as unknown as Record<string, unknown>;
+    if (typeof obj.text === "string") return obj.text.trim();
+    if (Array.isArray(obj.richText)) {
+      return (obj.richText as { text: string }[]).map((r) => r.text).join("").trim();
+    }
+    if (obj.result != null) return String(obj.result).trim();
+    if (typeof obj.hyperlink === "string") return obj.hyperlink.replace(/^mailto:/i, "").trim();
+    return "";
+  }
+  return String(v).trim();
 }
 
 // Password scheme: lastname_<first 4 chars of email local-part>, lowercased —
