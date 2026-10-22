@@ -33,15 +33,24 @@ type Assignment = { assignment_role: string; staff_name: string };
 type TimelineEntry = { id: string; entry_date: string; work_description: string | null };
 
 export function WorkspaceTab({ teamId, status }: { teamId: string; status: string }) {
+  // Phase 1 isn't "done" until a Phase 1 decision has actually been made —
+  // before that, it's the active step, not a permanently-checked one.
+  const phase1Decided = status !== "registered" && status !== "under_review";
   const phases = [
-    { n: 1, label: "Phase 1 - Registration", done: true },
+    { n: 1, label: "Phase 1 - Registration", done: phase1Decided, active: !phase1Decided },
     {
       n: 2,
       label: "Phase 2 - Proposal & Funding",
       done: ["shortlisted_phase3", "funded", "completed"].includes(status),
+      active: status === "shortlisted_phase2",
     },
-    { n: 3, label: "Phase 3 - Development", done: ["funded", "completed"].includes(status) },
-    { n: 4, label: "Phase 4 - Final Evaluation", done: status === "completed" },
+    {
+      n: 3,
+      label: "Phase 3 - Development",
+      done: ["funded", "completed"].includes(status),
+      active: status === "shortlisted_phase3",
+    },
+    { n: 4, label: "Phase 4 - Final Evaluation", done: status === "completed", active: status === "funded" },
   ];
 
   const inPhase2 = status === "shortlisted_phase2";
@@ -58,12 +67,20 @@ export function WorkspaceTab({ teamId, status }: { teamId: string; status: strin
             <div
               key={p.n}
               className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                p.done ? "bg-marigold/15 text-marigold" : "text-muted"
+                p.done
+                  ? "bg-marigold/15 text-marigold"
+                  : p.active
+                    ? "bg-marigold/5 text-ink ring-1 ring-inset ring-marigold/50"
+                    : "text-muted"
               }`}
             >
               <span
                 className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                  p.done ? "bg-marigold text-ink" : "border border-line"
+                  p.done
+                    ? "bg-marigold text-ink"
+                    : p.active
+                      ? "border-2 border-marigold text-marigold"
+                      : "border border-line"
                 }`}
               >
                 {p.done ? "✓" : p.n}
