@@ -87,10 +87,14 @@ export function PhaseEnginePanel({ initialPhases }: { initialPhases: Phase[] }) 
       <h1 className="mt-1 font-display text-2xl font-bold text-ink">Phase Engine</h1>
       <p className="mt-1 text-sm text-muted">
         Open or close each phase, and optionally schedule when it should open/close automatically.
-        Phase 1 directly gates the public <code>/register</code> page — toggle it closed, or set a
-        past "Scheduled close", and new registrations stop immediately, showing a "Registrations are
-        closed" page instead. Phases 2-4 schedules are informational only for now; nothing else
-        reads them yet.
+        For Phase 1, the Open/Closed toggle and "Scheduled close" gate the public{" "}
+        <code>/register</code> page (new registrations stop, showing a "Registrations are closed"
+        page) — this doesn&apos;t affect accounts you create yourself via spreadsheet import.
+        Separately, Phase 1&apos;s "Scheduled open" gates pitch deck <em>submission</em> for
+        already-registered participants: set a future date/time and their portal shows "Pitch deck
+        submission opens soon" with that date, instead of the upload form, until it passes — useful
+        for creating accounts ahead of when you actually want submissions to start. Phases 2-4
+        schedules are informational only for now; nothing else reads them yet.
       </p>
 
       {error && (
