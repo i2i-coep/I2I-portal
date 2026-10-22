@@ -1,0 +1,26 @@
+name: Keep-alive and notification queue drain
+
+# Runs every 15 minutes, free, on GitHub's own infrastructure — no paid cron
+# service needed. Two jobs: ping /api/health (stops Supabase Free tier from
+# auto-pausing after 7 days idle) and call /api/notifications/process (sends
+# every queued email/WhatsApp message, e.g. registration confirmations with
+# the participant's login password). The Vercel cron in vercel.json also
+# calls /process, but only once a day — this is what makes delivery actually
+# fast. See README.md "Free scheduling via GitHub Actions" for setup.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping-and-process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/health
+        run: curl -fsS "${{ secrets.SITE_URL }}/api/health" || true
+
+      - name: Process notification queue
+        run: |
+          curl -fsS -X POST "${{ secrets.SITE_URL }}/api/notifications/process" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
