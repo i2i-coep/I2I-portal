@@ -51,11 +51,11 @@ const KIND_CONFIG: Record<
   },
   // PDF-only — this is the pre-selection screening upload for all ~550
   // Phase 1 registrants, so the size cap is kept tight to bound the
-  // aggregate storage footprint (worst case 550 x 10MB = 5.5GB).
+  // aggregate storage footprint (worst case 550 x 5MB = 2.75GB).
   "phase1-ppt": {
     accept: ".pdf",
     extensions: ["pdf"],
-    maxMB: 10,
+    maxMB: 5,
     mime: ["application/pdf"],
   },
 };

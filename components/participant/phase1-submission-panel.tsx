@@ -95,7 +95,7 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
           kind="phase1-ppt"
           bucket="phase1-uploads"
           label="Pitch Deck (PDF)"
-          helpText="PDF only, max 10MB."
+          helpText="PDF only, max 5MB."
           required
           currentPath={data.pitch_deck_url}
           onSaved={async (path) => {
