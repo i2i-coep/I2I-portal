@@ -14,6 +14,9 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // null = still loading; undefined-ish "not locked" is represented by null opensAt
+  const [opensAt, setOpensAt] = useState<string | null>(null);
+  const [opensAtLoaded, setOpensAtLoaded] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -24,14 +27,19 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
         .from("phase1_submissions")
         .upsert({ team_id: teamId }, { onConflict: "team_id", ignoreDuplicates: true });
 
-      const { data: row, error } = await supabase
-        .from("phase1_submissions")
-        .select("pitch_deck_url, submitted_at")
-        .eq("team_id", teamId)
-        .maybeSingle();
+      const [{ data: row, error }, { data: phase1Settings }] = await Promise.all([
+        supabase
+          .from("phase1_submissions")
+          .select("pitch_deck_url, submitted_at")
+          .eq("team_id", teamId)
+          .maybeSingle(),
+        supabase.from("phase_settings").select("opens_at").eq("phase_number", 1).maybeSingle(),
+      ]);
 
       if (error) throw error;
       setData(row ?? { pitch_deck_url: null, submitted_at: null });
+      setOpensAt(phase1Settings?.opens_at ?? null);
+      setOpensAtLoaded(true);
       setLoadError(null);
     } catch (err) {
       console.error("Failed to load Phase 1 submission:", err);
@@ -76,7 +84,31 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
     );
   }
 
-  if (!data) return <div className="h-40 animate-pulse rounded-2xl border border-line bg-surface" />;
+  if (!data || !opensAtLoaded) {
+    return <div className="h-40 animate-pulse rounded-2xl border border-line bg-surface" />;
+  }
+
+  const isLocked = !!opensAt && new Date(opensAt).getTime() > Date.now();
+
+  if (isLocked) {
+    return (
+      <div className="rounded-2xl border border-line bg-surface p-6">
+        <h2 className="font-display text-lg font-semibold text-ink">
+          Pitch deck submission opens soon
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-ink-light">
+          Your account is registered — thanks for signing up. Pitch deck submission will open on{" "}
+          <span className="font-semibold text-marigold">
+            {new Date(opensAt!).toLocaleString(undefined, {
+              dateStyle: "long",
+              timeStyle: "short",
+            })}
+          </span>
+          . Check back then to upload your PDF and submit for review.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-line bg-surface p-6">
