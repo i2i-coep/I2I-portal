@@ -91,7 +91,7 @@ export function Phase2DelegatePanel({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-base font-semibold text-ink">
-            Give Access — Delegate Phase 2 Review
+            Give Access — Delegate Phase 3 Review
           </h2>
           <p className="mt-1 text-xs text-muted">
             Hand off specific projects to an Ambassador or Chief Ambassador — they'll see it in

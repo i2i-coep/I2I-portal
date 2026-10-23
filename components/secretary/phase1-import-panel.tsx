@@ -60,7 +60,7 @@ export function Phase1ImportPanel() {
   return (
     <div className="mb-6 rounded-2xl border border-line bg-surface p-6">
       <h2 className="font-display text-base font-semibold text-ink">
-        Import Phase 1 Registrations
+        Import Registrations (from the Phase 1 Google Form)
       </h2>
       <p className="mt-1 text-xs text-muted">
         Export the Google Form responses as .xlsx and upload here to create each team&apos;s

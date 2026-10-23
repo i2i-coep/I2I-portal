@@ -9,11 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
 import { ChangePasswordButton } from "./change-password-modal";
 
-const COMPETITION_FLOW = [
-  { href: "/portal/secretary/phase-1", label: "Phase 1 – Registration", n: 1 },
-  { href: "/portal/secretary/phase-2", label: "Phase 2 – Proposal & Funding", n: 2 },
-  { href: "/portal/secretary/phase-3", label: "Phase 3 – Development", n: 3 },
-  { href: "/portal/secretary/phase-4", label: "Phase 4 – Final Evaluation", n: 4 },
+// Phase 3 isn't two separate phases, and isn't one undivided step either —
+// two distinct pages/workflows (proposal+funding docs, then mentorship)
+// within the same Phase 3, shown nested under a non-link "Phase 3" header.
+const COMPETITION_FLOW: { href: string; label: string; n: string; indent?: boolean }[] = [
+  { href: "/portal/secretary/phase-1", label: "Phase 2 – Pitch Deck Submission", n: "2" },
+  { href: "/portal/secretary/phase-2", label: "3.0 – Proposal & Funding", n: "3.0", indent: true },
+  { href: "/portal/secretary/phase-3", label: "3.1 – Mentorship", n: "3.1", indent: true },
+  { href: "/portal/secretary/phase-4", label: "Phase 4 – Valedictory", n: "4" },
 ];
 
 const MANAGEMENT = [
@@ -61,22 +64,32 @@ function NavLinks({
         Competition Flow
       </p>
       <nav className="mb-6 space-y-1">
-        {COMPETITION_FLOW.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-              pathname === item.href
-                ? "bg-marigold/15 text-marigold"
-                : "text-ink-light hover:bg-paper"
-            }`}
-          >
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-[10px]">
-              {item.n}
-            </span>
-            {item.label}
-          </Link>
+        {COMPETITION_FLOW.map((item, i) => (
+          <div key={item.href}>
+            {item.indent && !COMPETITION_FLOW[i - 1]?.indent && (
+              <p className="mb-1 mt-2 px-3 text-xs font-semibold text-ink-light">Phase 3</p>
+            )}
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium transition ${
+                item.indent ? "ml-4 border-l border-line pl-3 text-xs" : "px-3"
+              } ${
+                pathname === item.href
+                  ? "bg-marigold/15 text-marigold"
+                  : "text-ink-light hover:bg-paper"
+              }`}
+            >
+              <span
+                className={`flex shrink-0 items-center justify-center rounded-full border border-current px-1 ${
+                  item.indent ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"
+                }`}
+              >
+                {item.n}
+              </span>
+              {item.label}
+            </Link>
+          </div>
         ))}
       </nav>
 

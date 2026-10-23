@@ -140,10 +140,10 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 1</p>
-          <h1 className="mt-1 font-display text-2xl font-bold text-ink">Registration Queue</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 2</p>
+          <h1 className="mt-1 font-display text-2xl font-bold text-ink">Pitch Deck Review Queue</h1>
           <p className="mt-1 text-sm text-muted">
-            Review all registered team entries. Shortlist eligible candidates to unlock Phase 2.
+            Review every registered team's pitch deck. Shortlist eligible candidates to unlock Phase 3.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 sm:items-end">
@@ -180,7 +180,7 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
               disabled={bulkLoading || counts.registered === 0}
               className="whitespace-nowrap rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink-light hover:border-marigold hover:text-marigold disabled:opacity-50"
             >
-              {bulkLoading ? "Updating..." : "⚡ Make All Phase 1 Eligible"}
+              {bulkLoading ? "Updating..." : "⚡ Make All Eligible for Phase 3"}
             </button>
           </div>
           {exportError && <p className="max-w-xs text-right text-xs font-medium text-red-500">{exportError}</p>}
@@ -192,7 +192,7 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
         <div className="mt-4 rounded-xl border border-marigold/30 bg-marigold/10 p-4 text-sm">
           <p className="font-medium text-ink">{importResult.message}</p>
           <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-light">
-            <span>✓ Accepted → Phase 2: <strong>{importResult.accepted}</strong></span>
+            <span>✓ Accepted → Phase 3: <strong>{importResult.accepted}</strong></span>
             <span>✕ Rejected: <strong>{importResult.rejected}</strong></span>
             {importResult.alreadyDecided > 0 && (
               <span>⏭ Skipped (already decided previously): <strong>{importResult.alreadyDecided}</strong></span>

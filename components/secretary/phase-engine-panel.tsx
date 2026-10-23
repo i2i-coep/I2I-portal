@@ -12,6 +12,19 @@ type Phase = {
   updated_at: string;
 };
 
+// phase_settings.phase_number stays a stable 1-4 internal key (unchanged in
+// the DB to avoid touching live data) — these are the real-world phase
+// labels/names shown to the Secretary, which no longer line up 1:1 with
+// that internal number. See the competition flow: Phase 1 (Google Form
+// registration) has no portal role at all and isn't managed here.
+const DISPLAY_LABEL: Record<number, string> = { 1: "Phase 2", 2: "Phase 3.0", 3: "Phase 3.1", 4: "Phase 4" };
+const DISPLAY_NAME: Record<number, string> = {
+  1: "Pitch Deck Submission & Review",
+  2: "Proposal & Funding Documents",
+  3: "Mentorship",
+  4: "Valedictory (COEP Exhibition)",
+};
+
 // <input type="datetime-local"> wants "YYYY-MM-DDTHH:mm" in local time, no
 // timezone suffix — different shape from the timestamptz ISO string we store.
 function toLocalInputValue(iso: string | null): string {
@@ -86,15 +99,17 @@ export function PhaseEnginePanel({ initialPhases }: { initialPhases: Phase[] }) 
       <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Management</p>
       <h1 className="mt-1 font-display text-2xl font-bold text-ink">Phase Engine</h1>
       <p className="mt-1 text-sm text-muted">
-        Open or close each phase, and optionally schedule when it should open/close automatically.
-        For Phase 1, the Open/Closed toggle and "Scheduled close" gate the public{" "}
-        <code>/register</code> page (new registrations stop, showing a "Registrations are closed"
-        page) — this doesn&apos;t affect accounts you create yourself via spreadsheet import.
-        Separately, Phase 1&apos;s "Scheduled open" gates pitch deck <em>submission</em> for
-        already-registered participants: set a future date/time and their portal shows "Pitch deck
-        submission opens soon" with that date, instead of the upload form, until it passes — useful
-        for creating accounts ahead of when you actually want submissions to start. Phases 2-4
-        schedules are informational only for now; nothing else reads them yet.
+        Phase 1 (Google Form registration) has no role in the portal and isn&apos;t managed here —
+        the four rows below are Phase 2 through Phase 4. Open or close each one, and optionally
+        schedule when it should open/close automatically. For the first row (Phase 2), the
+        Open/Closed toggle and "Scheduled close" gate the public <code>/register</code> page (new
+        registrations stop, showing a "Registrations are closed" page) — this doesn&apos;t affect
+        accounts you create yourself via spreadsheet import. Separately, that row&apos;s "Scheduled
+        open" gates pitch deck <em>submission</em> for already-registered participants: set a
+        future date/time and their portal shows "Pitch deck submission opens soon" with that date,
+        instead of the upload form, until it passes — useful for creating accounts ahead of when
+        you actually want submissions to start. The other rows&apos; schedules are informational
+        only for now; nothing else reads them yet.
       </p>
 
       {error && (
@@ -112,10 +127,10 @@ export function PhaseEnginePanel({ initialPhases }: { initialPhases: Phase[] }) 
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-                    Phase {p.phase_number}
+                    {DISPLAY_LABEL[p.phase_number] ?? `Phase ${p.phase_number}`}
                   </p>
                   <h3 className="mt-0.5 font-display text-lg font-semibold text-ink">
-                    {p.phase_name}
+                    {DISPLAY_NAME[p.phase_number] ?? p.phase_name}
                   </h3>
                 </div>
                 <button

@@ -120,7 +120,7 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
             Delegated Review
           </p>
           <h2 className="mt-1 font-display text-lg font-semibold text-ink">
-            Phase 1 Pitch Decks Assigned To You
+            Phase 2 Pitch Decks Assigned To You
           </h2>
           <p className="mt-1 text-sm text-muted">
             Open each pitch deck and give it a score out of 10 — {scoredCount}/{rows.length} scored so far.
