@@ -39,8 +39,8 @@ const HEADER_FILL: ExcelJS.Fill = {
 
 const COLUMNS: { header: string; key: keyof Row | string; width: number }[] = [
   { header: "Project Code", key: "project_code", width: 16 },
-  { header: "Phase 3 Decision", key: "decision", width: 16 },
-  { header: "Phase 1 Score", key: "phase1_score", width: 14 },
+  { header: "Phase 3.1 Decision", key: "decision", width: 16 },
+  { header: "Phase 2 Score", key: "phase1_score", width: 14 },
   { header: "Project Name", key: "project_name", width: 30 },
   { header: "College", key: "college_name", width: 26 },
   { header: "Team Leader", key: "leader_name", width: 20 },

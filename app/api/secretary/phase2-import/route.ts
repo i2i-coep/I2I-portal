@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       if (sheet.name.trim().toLowerCase() === "summary") continue;
       const headerRow = sheet.getRow(1);
       const codeCol = findColumn(headerRow, "Project Code");
-      const decisionCol = findColumn(headerRow, "Phase 3 Decision", "Decision");
+      const decisionCol = findColumn(headerRow, "Phase 3.1 Decision", "Phase 3 Decision", "Decision");
       const amountCol = findColumn(headerRow, "Amount Approved (₹)", "Amount Approved");
       if (!codeCol || !decisionCol) continue; // not one of our exported sheets — skip quietly rather than error the whole import
       sheetsRead++;
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
 
     if (sheetsRead === 0) {
       return NextResponse.json(
-        { error: 'No sheets with "Project Code" and "Phase 3 Decision" columns were found. Upload the spreadsheet as downloaded from this portal.' },
+        { error: 'No sheets with "Project Code" and "Phase 3.1 Decision" columns were found. Upload the spreadsheet as downloaded from this portal.' },
         { status: 400 }
       );
     }

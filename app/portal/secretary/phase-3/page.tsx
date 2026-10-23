@@ -49,9 +49,9 @@ export default async function Phase3Page() {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 3</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 3.1</p>
       <h1 className="mt-1 font-display text-2xl font-bold text-ink">
-        Project Development &amp; Milestones
+        Mentorship &amp; Milestones
       </h1>
       <p className="mt-1 text-sm text-muted">
         Review internal feedback logs registered by Mentors &amp; Ambassadors.

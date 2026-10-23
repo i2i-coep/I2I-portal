@@ -140,7 +140,7 @@ export function TeamDetailPanel({
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-6">
-              <DetailSection title="Phase 1 Pitch Deck">
+              <DetailSection title="Phase 2 Pitch Deck">
                 {phase1?.pitch_deck_url ? (
                   <div className="col-span-2 flex items-center justify-between rounded-lg border border-marigold/30 bg-marigold/10 px-4 py-3">
                     <div>
@@ -231,7 +231,7 @@ export function TeamDetailPanel({
                   disabled={updating}
                   className="flex-1 rounded-lg bg-marigold py-2.5 text-sm font-semibold text-ink disabled:opacity-50"
                 >
-                  {updating ? "Saving…" : "Accept → Shortlist for Phase 2"}
+                  {updating ? "Saving…" : "Accept → Shortlist for Phase 3"}
                 </button>
               </div>
             )}

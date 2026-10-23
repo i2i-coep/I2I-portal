@@ -33,24 +33,40 @@ type Assignment = { assignment_role: string; staff_name: string };
 type TimelineEntry = { id: string; entry_date: string; work_description: string | null };
 
 export function WorkspaceTab({ teamId, status }: { teamId: string; status: string }) {
-  // Phase 1 isn't "done" until a Phase 1 decision has actually been made —
-  // before that, it's the active step, not a permanently-checked one.
-  const phase1Decided = status !== "registered" && status !== "under_review";
-  const phases = [
-    { n: 1, label: "Phase 1 - Registration", done: phase1Decided, active: !phase1Decided },
+  // Phase 2 (pitch deck submission + review — Phase 1 itself is the external
+  // Google Form registration, already complete for every account that
+  // exists, so it's shown as a permanently-done formality, not a live step)
+  // isn't "done" until a decision has actually been made — before that,
+  // it's the active step, not a permanently-checked one.
+  const phase2Decided = status !== "registered" && status !== "under_review";
+  type PhaseRow = { n: string; label: string; done: boolean; active: boolean; sub?: PhaseRow[] };
+  const phases: PhaseRow[] = [
+    { n: "1", label: "Phase 1 - Registration", done: true, active: false },
+    { n: "2", label: "Phase 2 - Pitch Deck Submission", done: phase2Decided, active: !phase2Decided },
     {
-      n: 2,
-      label: "Phase 2 - Proposal & Funding",
-      done: ["shortlisted_phase3", "funded", "completed"].includes(status),
-      active: status === "shortlisted_phase2",
-    },
-    {
-      n: 3,
-      label: "Phase 3 - Development",
+      n: "3",
+      label: "Phase 3",
       done: ["funded", "completed"].includes(status),
-      active: status === "shortlisted_phase3",
+      active: ["shortlisted_phase2", "shortlisted_phase3"].includes(status),
+      // Not two separate phases, and not one undivided step either — two
+      // distinct pages/workflows (proposal+funding docs, then mentorship)
+      // within the same Phase 3, shown as sub-steps.
+      sub: [
+        {
+          n: "3.0",
+          label: "Proposal & Funding",
+          done: ["shortlisted_phase3", "funded", "completed"].includes(status),
+          active: status === "shortlisted_phase2",
+        },
+        {
+          n: "3.1",
+          label: "Mentorship",
+          done: ["funded", "completed"].includes(status),
+          active: status === "shortlisted_phase3",
+        },
+      ],
     },
-    { n: 4, label: "Phase 4 - Final Evaluation", done: status === "completed", active: status === "funded" },
+    { n: "4", label: "Phase 4 - Valedictory", done: status === "completed", active: status === "funded" },
   ];
 
   const inPhase2 = status === "shortlisted_phase2";
@@ -64,28 +80,58 @@ export function WorkspaceTab({ teamId, status }: { teamId: string; status: strin
         </p>
         <div className="mt-3 space-y-1.5">
           {phases.map((p) => (
-            <div
-              key={p.n}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                p.done
-                  ? "bg-marigold/15 text-marigold"
-                  : p.active
-                    ? "bg-marigold/5 text-ink ring-1 ring-inset ring-marigold/50"
-                    : "text-muted"
-              }`}
-            >
-              <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+            <div key={p.n}>
+              <div
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
                   p.done
-                    ? "bg-marigold text-ink"
+                    ? "bg-marigold/15 text-marigold"
                     : p.active
-                      ? "border-2 border-marigold text-marigold"
-                      : "border border-line"
+                      ? "bg-marigold/5 text-ink ring-1 ring-inset ring-marigold/50"
+                      : "text-muted"
                 }`}
               >
-                {p.done ? "✓" : p.n}
-              </span>
-              {p.label}
+                <span
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                    p.done
+                      ? "bg-marigold text-ink"
+                      : p.active
+                        ? "border-2 border-marigold text-marigold"
+                        : "border border-line"
+                  }`}
+                >
+                  {p.done ? "✓" : p.n}
+                </span>
+                {p.label}
+              </div>
+              {p.sub && (
+                <div className="ml-4 mt-1 space-y-1 border-l border-line pl-3">
+                  {p.sub.map((s) => (
+                    <div
+                      key={s.n}
+                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                        s.done
+                          ? "text-marigold"
+                          : s.active
+                            ? "text-ink"
+                            : "text-muted"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+                          s.done
+                            ? "bg-marigold text-ink"
+                            : s.active
+                              ? "border-2 border-marigold text-marigold"
+                              : "border border-line"
+                        }`}
+                      >
+                        {s.done ? "✓" : s.n}
+                      </span>
+                      {s.label}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -199,26 +245,26 @@ function Phase2Panel({ teamId }: { teamId: string }) {
           🎉 Congratulations
         </p>
         <h2 className="mt-1 font-display text-lg font-semibold text-ink">
-          Your project has been shortlisted for Phase 2!
+          Your project has been shortlisted for Phase 3!
         </h2>
         <p className="mt-1.5 max-w-2xl text-sm text-ink-light">
           Download the official proposal format below, fill it out, and upload your pitch deck
           (as a PDF or PPTX) along with your budget and bank details. This unlocks funding
-          review and, on approval, Phase 3 mentorship.
+          review and, on approval, Phase 3.1 mentorship.
         </p>
         <a
           href="/templates/I2I-Phase2-Pitch-Format.docx"
           download
           className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-marigold px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
         >
-          ⬇ Download Phase 2 Proposal Format (.docx)
+          ⬇ Download Phase 3.0 Proposal Format (.docx)
         </a>
       </div>
 
       <div className="rounded-2xl border border-line bg-surface p-6">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-ink">
-            Phase 2: Proposal Screening Progress
+            Phase 3.0: Proposal Screening Progress
           </h2>
           <span className="rounded-full border border-line bg-paper px-2.5 py-1 text-xs text-ink-light">
             Live Tracking
@@ -896,7 +942,7 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
             🎉 Congratulations
           </p>
           <h2 className="mt-1 font-display text-lg font-semibold text-ink">
-            Your project has been selected for Phase 3!
+            Your project has moved into Phase 3.1 — Mentorship!
           </h2>
           <p className="mt-1.5 max-w-2xl text-sm text-ink-light">
             Your funding has been approved and your mentor and ambassador are assigned below.

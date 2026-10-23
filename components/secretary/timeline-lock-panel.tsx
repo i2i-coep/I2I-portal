@@ -51,7 +51,7 @@ export function TimelineLockPanel({ teams: initialTeams }: { teams: Team[] }) {
         <h3 className="font-display text-base font-semibold text-ink">Daily Timeline Lock</h3>
         <p className="mt-1 text-xs text-muted">
           Locking a team stops the leader from adding or editing timeline entries — use once
-          Phase 3 development is over, before final evaluation.
+          Phase 3 mentorship is over, before the Valedictory.
         </p>
       </div>
       <div className="overflow-x-auto">

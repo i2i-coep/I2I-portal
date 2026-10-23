@@ -92,7 +92,7 @@ export function Phase2ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
             Delegated Review
           </p>
           <h2 className="mt-1 font-display text-lg font-semibold text-ink">
-            Phase 2 Projects Assigned To You
+            Phase 3.0 Projects Assigned To You
           </h2>
           <p className="mt-1 text-sm text-muted">
             The Secretary handed these off to you for screening — review pitch deck, bills, and

@@ -40,8 +40,8 @@ export function emailTemplate(type: string, payload: Payload): { subject: string
       };
     case "phase2_shortlisted":
       return {
-        subject: `Your project ${payload.project_code} has been shortlisted for Phase 2`,
-        body: `Congratulations! ${payload.team_name} (${payload.project_code}) has been shortlisted. Log in to the I2I portal to complete your Phase 2 submission — bills, pitch details, and bank information.`,
+        subject: `Your project ${payload.project_code} has been shortlisted for Phase 3`,
+        body: `Congratulations! ${payload.team_name} (${payload.project_code}) has been shortlisted. Log in to the I2I portal to complete your Phase 3 submission — bills, pitch details, and bank information.`,
       };
     case "mentor_assigned":
       return {
@@ -63,7 +63,7 @@ export function emailTemplate(type: string, payload: Payload): { subject: string
     case "phase3_shortlisted":
       return {
         subject: `🎉 ${payload.project_code} has been selected for Phase 3!`,
-        body: `Congratulations! ${payload.team_name} (${payload.project_code}) has been selected for Phase 3 — Development. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.`,
+        body: `Congratulations! ${payload.team_name} (${payload.project_code}) has been selected for Phase 3 — Mentorship. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.`,
       };
     default:
       return { subject: "I2I Portal Update", body: "You have a new update on the I2I portal." };
@@ -100,10 +100,10 @@ export const EMAIL_TEMPLATE_TYPES: {
   },
   {
     type: "phase2_shortlisted",
-    label: "Phase 2 shortlisted",
-    defaultSubject: "Your project {{project_code}} has been shortlisted for Phase 2",
+    label: "Phase 3 shortlisted (Proposal & Funding)",
+    defaultSubject: "Your project {{project_code}} has been shortlisted for Phase 3",
     defaultBody:
-      "Congratulations! {{team_name}} ({{project_code}}) has been shortlisted. Log in to the I2I portal to complete your Phase 2 submission — bills, pitch details, and bank information.",
+      "Congratulations! {{team_name}} ({{project_code}}) has been shortlisted. Log in to the I2I portal to complete your Phase 3 submission — bills, pitch details, and bank information.",
     variables: ["project_code", "team_name"],
   },
   {
@@ -132,10 +132,10 @@ export const EMAIL_TEMPLATE_TYPES: {
   },
   {
     type: "phase3_shortlisted",
-    label: "Phase 3 shortlisted",
+    label: "Phase 3 shortlisted (Mentorship)",
     defaultSubject: "🎉 {{project_code}} has been selected for Phase 3!",
     defaultBody:
-      "Congratulations! {{team_name}} ({{project_code}}) has been selected for Phase 3 — Development. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.",
+      "Congratulations! {{team_name}} ({{project_code}}) has been selected for Phase 3 — Mentorship. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.",
     variables: ["project_code", "team_name"],
   },
 ];
@@ -145,7 +145,7 @@ export function whatsappTemplate(type: string, payload: Payload): string {
     case "team_notified_of_mentor":
       return `Your ${payload.role} for project ${payload.project_code} is ${payload.staff_name}. Log in to the I2I portal for details.`;
     case "phase2_shortlisted":
-      return `Congrats! Your project ${payload.project_code} has been shortlisted for Phase 2. Log in to the I2I portal to continue.`;
+      return `Congrats! Your project ${payload.project_code} has been shortlisted for Phase 3. Log in to the I2I portal to continue.`;
     case "phase3_shortlisted":
       return `🎉 Your project ${payload.project_code} has been selected for Phase 3! Log in to the I2I portal to see your mentor and ambassador.`;
     default:

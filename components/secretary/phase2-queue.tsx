@@ -156,7 +156,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 2</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 3.0</p>
           <h1 className="mt-1 font-display text-2xl font-bold text-ink">
             Proposal &amp; Funding Evaluation
           </h1>
@@ -203,7 +203,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
         <div className="mt-4 rounded-xl border border-marigold/30 bg-marigold/10 p-4 text-sm">
           <p className="font-medium text-ink">{importResult.message}</p>
           <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-light">
-            <span>✓ Accepted → Phase 3: <strong>{importResult.accepted}</strong></span>
+            <span>✓ Accepted → Phase 3.1 (Mentorship): <strong>{importResult.accepted}</strong></span>
             {!!importResult.acceptedWithAmount && (
               <span>💰 With a funding amount applied: <strong>{importResult.acceptedWithAmount}</strong></span>
             )}
@@ -266,7 +266,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
               <th className="px-4 py-3 font-medium">Project Name</th>
               <th className="px-4 py-3 font-medium">Sector</th>
               <th className="px-4 py-3 font-medium">Institute</th>
-              <th className="px-4 py-3 font-medium">Phase 1 Score</th>
+              <th className="px-4 py-3 font-medium">Phase 2 Score</th>
               <th className="px-4 py-3 font-medium">Pitch Deck</th>
               <th className="px-4 py-3 font-medium">Bills</th>
               <th className="px-4 py-3 font-medium">Mentor?</th>

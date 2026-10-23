@@ -96,7 +96,7 @@ export function Phase1DelegatePanel({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-base font-semibold text-ink">
-            Distribute Phase 1 Review
+            Distribute Phase 2 Review
           </h2>
           <p className="mt-1 text-xs text-muted">
             Select which Ambassadors/Chief Ambassadors are reviewing this round, then split all

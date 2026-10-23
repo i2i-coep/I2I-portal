@@ -102,7 +102,7 @@ export async function GET() {
     workbook.creator = "I2I Portal";
     workbook.created = new Date();
 
-    const sheet = workbook.addWorksheet("Phase 1 Decisions");
+    const sheet = workbook.addWorksheet("Phase 2 Decisions");
     sheet.columns = [
       { header: "Project Code", key: "project_code", width: 16 },
       { header: "Decision", key: "decision", width: 14 },

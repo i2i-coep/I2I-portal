@@ -113,11 +113,11 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
   return (
     <div className="rounded-2xl border border-line bg-surface p-6">
       <h2 className="font-display text-lg font-semibold text-ink">
-        Submit your pitch deck
+        Phase 2: Submit your pitch deck
       </h2>
       <p className="mt-1.5 max-w-2xl text-sm text-ink-light">
         Upload a PDF of your pitch deck covering your idea, the problem, and your proposed
-        solution. The i2i team reviews every submission before shortlisting teams for Phase 2 —
+        solution. The i2i team reviews every submission before shortlisting teams for Phase 3 —
         no further action is needed from you until decisions are out.
       </p>
 

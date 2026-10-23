@@ -63,10 +63,11 @@ export function Phase4Table({ initialRows }: { initialRows: Row[] }) {
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 4</p>
           <h1 className="mt-1 font-display text-2xl font-bold text-ink">
-            Final Evaluation &amp; Results
+            Valedictory &amp; Results
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Assess final deliverables and generate competition winner rankings.
+            The top 40–50 projects exhibit at COEP in March for the valedictory. Assess final
+            deliverables and generate competition winner rankings.
           </p>
         </div>
         <input

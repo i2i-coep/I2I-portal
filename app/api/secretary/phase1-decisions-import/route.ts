@@ -158,7 +158,7 @@ export async function POST(request: Request) {
       alreadyDecided,
       notFound,
       unrecognizedDecisions: unrecognizedCount,
-      message: `Applied ${acceptIds.length + rejectIds.length} decisions. Shortlisted teams see their Phase 2 form unlock immediately; not-selected teams can download their certificate right away.`,
+      message: `Applied ${acceptIds.length + rejectIds.length} decisions. Shortlisted teams see their Phase 3 form unlock immediately; not-selected teams can download their certificate right away.`,
     });
   } catch (err) {
     console.error("Phase 1 decisions import failed:", err);

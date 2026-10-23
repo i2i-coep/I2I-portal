@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 // Every teams.status value the DB allows (database/01_schema.sql) — kept in
 // one place so the phase breakdown below can never silently drop a status.
 const STATUS_GROUPS = [
-  { label: "Phase 1 – Registration", statuses: ["registered", "under_review"], color: "bg-marigold" },
-  { label: "Phase 2 – Proposal & Funding", statuses: ["shortlisted_phase2"], color: "bg-marigold" },
-  { label: "Phase 3 – Development", statuses: ["shortlisted_phase3"], color: "bg-marigold" },
-  { label: "Phase 4 – Final Evaluation", statuses: ["funded", "completed"], color: "bg-marigold" },
+  { label: "Phase 2 – Pitch Deck Submission", statuses: ["registered", "under_review"], color: "bg-marigold" },
+  { label: "Phase 3 – Proposal & Funding", statuses: ["shortlisted_phase2"], color: "bg-marigold" },
+  { label: "Phase 3 – Mentorship", statuses: ["shortlisted_phase3"], color: "bg-marigold" },
+  { label: "Phase 4 – Valedictory", statuses: ["funded", "completed"], color: "bg-marigold" },
   { label: "Rejected", statuses: ["rejected"], color: "bg-red-500/70" },
   { label: "Withdrawn", statuses: ["withdrawn"], color: "bg-muted-foreground/40" },
 ] as const;
@@ -21,17 +21,21 @@ type AuditEntry = {
 // Turns a raw {action, details} audit row into a readable one-liner instead
 // of just the humanized action name — details is jsonb and was being fetched
 // then thrown away entirely.
+// Internal phase_settings.phase_number (1-4, unchanged in the DB) mapped to
+// the real-world phase label shown to the Secretary — see Phase Engine panel.
+const PHASE_NUMBER_LABEL: Record<number, string> = { 1: "2", 2: "3", 3: "3", 4: "4" };
+
 function describeAuditEntry(a: AuditEntry): string {
   const d = a.details ?? {};
   switch (a.action) {
     case "bulk_eligible":
-      return `Made ${d.teams_updated ?? "?"} team(s) eligible for Phase 2`;
+      return `Made ${d.teams_updated ?? "?"} team(s) eligible for Phase 3`;
     case "screening_pass":
-      return "Phase 2 screening: passed";
+      return "Phase 3 screening: passed";
     case "screening_reject":
-      return "Phase 2 screening: rejected";
+      return "Phase 3 screening: rejected";
     case "phase2_review_delegated":
-      return "Delegated a Phase 2 project for review";
+      return "Delegated a Phase 3 project for review";
     case "timeline_locked":
       return "Locked a team's Phase 3 timeline";
     case "timeline_unlocked":
@@ -41,7 +45,7 @@ function describeAuditEntry(a: AuditEntry): string {
     case "funding_decision":
       return `Funding decision: ${d.status ?? "updated"}${d.amount ? ` — ₹${d.amount}` : ""}`;
     case "phase_settings_updated":
-      return `Updated Phase ${d.phase_number ?? "?"} settings`;
+      return `Updated Phase ${PHASE_NUMBER_LABEL[Number(d.phase_number)] ?? d.phase_number ?? "?"} settings`;
     case "registration_accepted":
       return "Accepted a team's registration";
     case "registration_rejected":
@@ -49,7 +53,7 @@ function describeAuditEntry(a: AuditEntry): string {
     case "phase1_spreadsheet_import":
       return `Imported Phase 1 registrations — ${d.created ?? 0} created, ${d.skipped ?? 0} skipped, ${d.errors ?? 0} errors`;
     case "phase2_spreadsheet_import":
-      return `Imported Phase 2 spreadsheet — ${d.accepted ?? 0} accepted`;
+      return `Imported Phase 3 spreadsheet — ${d.accepted ?? 0} accepted`;
     case "staff_invited":
       return `Invited ${d.email ?? "a staff member"} as ${d.role ?? "staff"}`;
     case "staff_reactivated":
