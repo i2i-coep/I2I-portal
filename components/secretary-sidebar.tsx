@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,9 +43,7 @@ function NavLinks({
   return (
     <>
       <div className="mb-6 flex items-center gap-2 px-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-marigold font-display text-sm font-bold text-ink">
-          i2i
-        </span>
+        <Image src="/logos/i2i.png" alt="I2I" width={538} height={379} priority className="h-7 w-auto shrink-0" />
         <span className="font-display text-sm font-semibold text-ink">Admin Portal</span>
       </div>
 
@@ -149,9 +148,7 @@ export function SecretarySidebar({ name, email }: { name: string; email: string 
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 sm:hidden">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-marigold font-display text-sm font-bold text-ink">
-            i2i
-          </span>
+          <Image src="/logos/i2i.png" alt="I2I" width={538} height={379} priority className="h-7 w-auto shrink-0" />
           <span className="font-display text-sm font-semibold text-ink">Admin Portal</span>
         </div>
         <button
