@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
@@ -25,15 +26,25 @@ export function PortalHeader({
   return (
     <>
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-marigold">
-              I2I Portal · {portalLabel}
-            </p>
-            <p className="mt-0.5 font-display text-lg font-semibold text-ink">{name}</p>
-            <p className="text-xs text-muted capitalize">{roleLabel}</p>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/logos/i2i.png"
+              alt="I2I"
+              width={538}
+              height={379}
+              priority
+              className="h-7 w-auto shrink-0 sm:h-9"
+            />
+            <div className="min-w-0 border-l border-line pl-3">
+              <p className="truncate text-xs font-semibold uppercase tracking-widest text-marigold">
+                I2I Portal · {portalLabel}
+              </p>
+              <p className="mt-0.5 truncate font-display text-lg font-semibold text-ink">{name}</p>
+              <p className="truncate text-xs text-muted capitalize">{roleLabel}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <ChangePasswordButton />
             <button
               onClick={logout}
