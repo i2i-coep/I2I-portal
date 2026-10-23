@@ -18,6 +18,16 @@ function findColumn(headerRow: ExcelJS.Row, ...names: string[]): number | null {
     const text = String(cell.value ?? "").trim().toLowerCase();
     if (names.some((n) => n.toLowerCase() === text)) found = colNumber;
   });
+  if (found) return found;
+  // Fallback: the live Google Form sometimes exports the full multi-line
+  // question text as the header instead of a short label — e.g. "Problem
+  // statement \n(what problem are you solving?(~150 words)" rather than
+  // just "Problem Statement". Match on prefix instead of exact equality
+  // for that case, after collapsing embedded newlines to spaces.
+  headerRow.eachCell((cell, colNumber) => {
+    const text = String(cell.value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (names.some((n) => text.startsWith(n.toLowerCase()))) found = colNumber;
+  });
   return found;
 }
 
