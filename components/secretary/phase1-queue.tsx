@@ -29,7 +29,6 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
   const [teams, setTeams] = useState(initialTeams);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("all");
   const [search, setSearch] = useState("");
-  const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -73,19 +72,6 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
     }
     return rows;
   }, [teams, tab, search]);
-
-  async function makeAllEligible() {
-    if (!confirm(`Mark all "Pending / Unverified" (${counts.registered}) teams as eligible?`)) return;
-    setBulkLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.rpc("make_all_phase1_eligible");
-    if (!error) {
-      setTeams((prev) =>
-        prev.map((t) => (t.status === "registered" ? { ...t, status: "shortlisted_phase2" } : t))
-      );
-    }
-    setBulkLoading(false);
-  }
 
   async function exportSpreadsheet() {
     setExporting(true);
@@ -175,13 +161,6 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
             >
               {importing ? "Importing..." : "⬆ Upload Reviewed Spreadsheet"}
             </label>
-            <button
-              onClick={makeAllEligible}
-              disabled={bulkLoading || counts.registered === 0}
-              className="whitespace-nowrap rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink-light hover:border-marigold hover:text-marigold disabled:opacity-50"
-            >
-              {bulkLoading ? "Updating..." : "⚡ Make All Eligible for Phase 3"}
-            </button>
           </div>
           {exportError && <p className="max-w-xs text-right text-xs font-medium text-red-500">{exportError}</p>}
           {importError && <p className="max-w-xs text-right text-xs font-medium text-red-500">{importError}</p>}
