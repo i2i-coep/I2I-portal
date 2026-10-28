@@ -299,7 +299,7 @@ export function Phase2Queue({ initialRows }: { initialRows: Row[] }) {
                   </td>
                   <td className="px-4 py-3">
                     {r.pitch_deck_url ? (
-                      <StorageLink bucket="phase1-uploads" path={r.pitch_deck_url} />
+                      <StorageLink bucket="phase2-uploads" path={r.pitch_deck_url} />
                     ) : (
                       <span className="text-muted">None</span>
                     )}

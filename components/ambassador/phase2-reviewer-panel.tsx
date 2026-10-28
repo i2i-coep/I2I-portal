@@ -130,7 +130,7 @@ export function Phase2ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
                   <p className="text-xs text-muted">{r.college_name}</p>
                 </td>
                 <td className="px-4 py-3">
-                  {r.pitch_deck_url ? <StorageLink bucket="phase1-uploads" path={r.pitch_deck_url} /> : <span className="text-muted">None</span>}
+                  {r.pitch_deck_url ? <StorageLink bucket="phase2-uploads" path={r.pitch_deck_url} /> : <span className="text-muted">None</span>}
                 </td>
                 <td className="px-4 py-3">
                   {r.bills_doc_url ? <StorageLink bucket="phase2-uploads" path={r.bills_doc_url} /> : <span className="text-muted">None</span>}

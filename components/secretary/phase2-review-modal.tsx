@@ -56,6 +56,8 @@ export function Phase2ReviewModal({
 }) {
   const [app, setApp] = useState<{
     team_id: string;
+    pitch_deck_url: string | null;
+    other_documents: { name: string; path: string; uploaded_at: string }[];
     bills_doc_url: string | null;
     passbook_doc_url: string | null;
     pan_doc_url: string | null;
@@ -76,11 +78,11 @@ export function Phase2ReviewModal({
     const supabase = createClient();
     supabase
       .from("phase2_applications")
-      .select("team_id, bills_doc_url, passbook_doc_url, pan_doc_url, bank_account_holder, bank_account_number, bank_ifsc, bank_name, pan_number, mentor_requested, funding_status, amount_approved")
+      .select("team_id, pitch_deck_url, other_documents, bills_doc_url, passbook_doc_url, pan_doc_url, bank_account_holder, bank_account_number, bank_ifsc, bank_name, pan_number, mentor_requested, funding_status, amount_approved")
       .eq("id", applicationId)
       .single()
       .then(({ data }) => {
-        setApp(data);
+        setApp(data ? { ...data, other_documents: data.other_documents ?? [] } : data);
         setAmount(data?.amount_approved ?? 0);
         setStatus(data?.funding_status ?? "under_review");
       });
@@ -145,12 +147,34 @@ export function Phase2ReviewModal({
 
         <div className="mt-5">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Pitch Deck
+          </h4>
+          <div className="mt-2">
+            <DocLink label="Full proposal / pitch deck" path={app?.pitch_deck_url ?? null} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
             Bills & Quotations
           </h4>
           <div className="mt-2">
             <DocLink label="Bills / Quotations document" path={app?.bills_doc_url ?? null} />
           </div>
         </div>
+
+        {app?.other_documents && app.other_documents.length > 0 && (
+          <div className="mt-5">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Other Supporting Documents
+            </h4>
+            <div className="mt-2 space-y-2">
+              {app.other_documents.map((doc, i) => (
+                <DocLink key={i} label={doc.name} path={doc.path} />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-5">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">
