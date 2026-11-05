@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Phase1Queue } from "@/components/secretary/phase1-queue";
 import { Phase1ImportPanel } from "@/components/secretary/phase1-import-panel";
 import { Phase1DelegatePanel } from "@/components/secretary/phase1-delegate-panel";
+import { ResendRegistrationEmailsPanel } from "@/components/secretary/resend-registration-emails-panel";
 
 export default async function Phase1Page() {
   const supabase = await createClient();
@@ -76,6 +77,7 @@ export default async function Phase1Page() {
   return (
     <>
       <Phase1ImportPanel />
+      <ResendRegistrationEmailsPanel />
       <Phase1DelegatePanel reviewers={reviewers} unassignedTeams={unassignedTeams} />
       <Phase1Queue initialTeams={teams} />
     </>
