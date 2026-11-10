@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     .from("notification_queue")
     .select("*")
     .eq("status", "pending")
+    .eq("channel", "email")
     .lt("attempts", MAX_ATTEMPTS)
     .order("created_at", { ascending: true })
     .limit(BATCH_SIZE);
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       await dispatchNotification(item, admin);
       await admin
         .from("notification_queue")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .update({ status: "sent", sent_at: new Date().toISOString(), error: null })
         .eq("id", item.id);
       sent++;
     } catch (e) {
