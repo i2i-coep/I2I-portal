@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     .lt("attempts", MAX_ATTEMPTS)
     .order("created_at", { ascending: true })
     .limit(BATCH_SIZE);
-
+  
   if (error) {
     console.error(error);
     return NextResponse.json({ error: "Could not read queue" }, { status: 500 });
