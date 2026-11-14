@@ -14,8 +14,9 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // null = still loading; undefined-ish "not locked" is represented by null opensAt
+  // null = still loading; undefined-ish "not locked" is represented by null opensAt/closesAt
   const [opensAt, setOpensAt] = useState<string | null>(null);
+  const [closesAt, setClosesAt] = useState<string | null>(null);
   const [opensAtLoaded, setOpensAtLoaded] = useState(false);
 
   const load = useCallback(async () => {
@@ -33,12 +34,13 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
           .select("pitch_deck_url, submitted_at")
           .eq("team_id", teamId)
           .maybeSingle(),
-        supabase.from("phase_settings").select("opens_at").eq("phase_number", 1).maybeSingle(),
+        supabase.from("phase_settings").select("opens_at, closes_at").eq("phase_number", 1).maybeSingle(),
       ]);
 
       if (error) throw error;
       setData(row ?? { pitch_deck_url: null, submitted_at: null });
       setOpensAt(phase1Settings?.opens_at ?? null);
+      setClosesAt(phase1Settings?.closes_at ?? null);
       setOpensAtLoaded(true);
       setLoadError(null);
     } catch (err) {
@@ -88,9 +90,10 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
     return <div className="h-40 animate-pulse rounded-2xl border border-line bg-surface" />;
   }
 
-  const isLocked = !!opensAt && new Date(opensAt).getTime() > Date.now();
+  const notYetOpen = !!opensAt && new Date(opensAt).getTime() > Date.now();
+  const alreadyClosed = !!closesAt && new Date(closesAt).getTime() < Date.now();
 
-  if (isLocked) {
+  if (notYetOpen) {
     return (
       <div className="rounded-2xl border border-line bg-surface p-6">
         <h2 className="font-display text-lg font-semibold text-ink">
@@ -105,6 +108,26 @@ export function Phase1SubmissionPanel({ teamId }: { teamId: string }) {
             })}
           </span>
           . Check back then to upload your PDF and submit for review.
+        </p>
+      </div>
+    );
+  }
+
+  if (alreadyClosed) {
+    return (
+      <div className="rounded-2xl border border-line bg-surface p-6">
+        <h2 className="font-display text-lg font-semibold text-ink">
+          Pitch deck submission is closed
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-ink-light">
+          Submission closed on{" "}
+          <span className="font-semibold text-marigold">
+            {new Date(closesAt!).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}
+          </span>
+          .{" "}
+          {data.submitted_at
+            ? "Your submitted deck has been locked in and sent for review — no further changes are possible."
+            : "No pitch deck was submitted before the deadline. Contact the i2i team if you believe this is an error."}
         </p>
       </div>
     );
