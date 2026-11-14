@@ -59,6 +59,9 @@ export function Phase2ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
 
   if (rows.length === 0) return null;
 
+  const doneCount = rows.filter((r) => r.screening_status !== "pending").length;
+  const pendingCount = rows.length - doneCount;
+
   async function setScreening(applicationId: string, status: "pass" | "reject") {
     setUpdating(applicationId);
     const supabase = createClient();
@@ -99,6 +102,19 @@ export function Phase2ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
             bank details, then fast-screen or set the funding decision.
           </p>
         </div>
+        <div className="flex gap-3">
+          <div className="rounded-xl border border-line bg-paper px-4 py-2 text-center">
+            <p className="font-display text-2xl font-bold text-marigold">{pendingCount}</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted">Pending</p>
+          </div>
+          <div className="rounded-xl border border-line bg-paper px-4 py-2 text-center">
+            <p className="font-display text-2xl font-bold text-green-400">{doneCount}</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted">Done</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}

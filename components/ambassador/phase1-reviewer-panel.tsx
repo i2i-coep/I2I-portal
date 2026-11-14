@@ -111,6 +111,7 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
   if (rows.length === 0) return null;
 
   const scoredCount = rows.filter((r) => r.score != null).length;
+  const pendingCount = rows.length - scoredCount;
 
   return (
     <div className="rounded-2xl border border-line bg-surface p-6">
@@ -123,9 +124,23 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
             Phase 2 Pitch Decks Assigned To You
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Open each pitch deck and give it a score out of 10 — {scoredCount}/{rows.length} scored so far.
+            Open each pitch deck and give it a score out of 10 — every score you save is reflected
+            immediately in the Secretary's master spreadsheet.
           </p>
         </div>
+        <div className="flex gap-3">
+          <div className="rounded-xl border border-line bg-paper px-4 py-2 text-center">
+            <p className="font-display text-2xl font-bold text-marigold">{pendingCount}</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted">Pending</p>
+          </div>
+          <div className="rounded-xl border border-line bg-paper px-4 py-2 text-center">
+            <p className="font-display text-2xl font-bold text-green-400">{scoredCount}</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted">Done</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
