@@ -20,6 +20,7 @@ type Team = {
 const TABS = [
   { key: "all", label: "All Registrations" },
   { key: "registered", label: "Pending / Unverified" },
+  { key: "submitted", label: "Submitted - Awaiting Review" },
   { key: "eligible", label: "Eligible" },
   { key: "rejected", label: "Rejected" },
 ] as const;
@@ -47,6 +48,7 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
   const counts = {
     all: teams.length,
     registered: teams.filter((t) => t.status === "registered").length,
+    submitted: teams.filter((t) => t.status === "registered" && t.has_pitch_deck).length,
     eligible: teams.filter((t) =>
       ["shortlisted_phase2", "shortlisted_phase3", "funded", "completed"].includes(t.status)
     ).length,
@@ -56,6 +58,7 @@ export function Phase1Queue({ initialTeams }: { initialTeams: Team[] }) {
   const filtered = useMemo(() => {
     let rows = teams;
     if (tab === "registered") rows = rows.filter((t) => t.status === "registered");
+    if (tab === "submitted") rows = rows.filter((t) => t.status === "registered" && t.has_pitch_deck);
     if (tab === "eligible")
       rows = rows.filter((t) =>
         ["shortlisted_phase2", "shortlisted_phase3", "funded", "completed"].includes(t.status)
