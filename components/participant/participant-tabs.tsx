@@ -9,6 +9,7 @@ type Member = { full_name: string; email: string | null; phone: string | null; r
 type TeamData = {
   id: string;
   project_code: string | null;
+  team_name: string;
   leader_name: string;
   leader_email: string;
   leader_phone: string;
@@ -25,7 +26,9 @@ type TeamData = {
   members: Member[];
 };
 
-export function ParticipantTabs({ team }: { team: TeamData }) {
+type EditRequest = { id: string; status: string } | null;
+
+export function ParticipantTabs({ team, editRequest }: { team: TeamData; editRequest: EditRequest }) {
   const [tab, setTab] = useState<"workspace" | "team_info">("workspace");
 
   return (
@@ -52,7 +55,7 @@ export function ParticipantTabs({ team }: { team: TeamData }) {
       {tab === "workspace" ? (
         <WorkspaceTab teamId={team.id} status={team.status} />
       ) : (
-        <TeamInfoTab team={team} />
+        <TeamInfoTab team={team} editRequest={editRequest} />
       )}
     </div>
   );
