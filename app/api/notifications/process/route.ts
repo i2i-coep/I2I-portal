@@ -18,10 +18,11 @@ export async function POST(req: NextRequest) {
     .from("notification_queue")
     .select("*")
     .eq("status", "pending")
+    .eq("channel", "email")
     .lt("attempts", MAX_ATTEMPTS)
     .order("created_at", { ascending: true })
     .limit(BATCH_SIZE);
-
+  
   if (error) {
     console.error(error);
     return NextResponse.json({ error: "Could not read queue" }, { status: 500 });
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       await dispatchNotification(item, admin);
       await admin
         .from("notification_queue")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .update({ status: "sent", sent_at: new Date().toISOString(), error: null })
         .eq("id", item.id);
       sent++;
     } catch (e) {

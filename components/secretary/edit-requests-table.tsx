@@ -102,12 +102,14 @@ export function EditRequestsTable({ initialRows }: { initialRows: Row[] }) {
                 </p>
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${
-                    r.status === "approved"
-                      ? "bg-green-500/15 text-green-400"
-                      : "bg-red-500/15 text-red-400"
+                    r.status === "applied"
+                      ? "bg-blue-500/15 text-blue-400"
+                      : r.status === "approved"
+                        ? "bg-green-500/15 text-green-400"
+                        : "bg-red-500/15 text-red-400"
                   }`}
                 >
-                  {r.status}
+                  {r.status === "applied" ? "Approved — participant applied it" : r.status}
                 </span>
               </div>
             ))}
