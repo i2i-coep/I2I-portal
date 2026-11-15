@@ -53,6 +53,8 @@ export function TeamDetailPanel({
   const [phase1, setPhase1] = useState<Phase1Submission | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [sendingNow, setSendingNow] = useState(false);
+  const [sendNowResult, setSendNowResult] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -81,6 +83,25 @@ export function TeamDetailPanel({
       setLoading(false);
     });
   }, [teamId]);
+
+  async function sendNow() {
+    setSendingNow(true);
+    setSendNowResult(null);
+    try {
+      const res = await fetch("/api/secretary/send-notification-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || `Failed (${res.status})`);
+      setSendNowResult(json.message);
+    } catch (err) {
+      setSendNowResult(err instanceof Error ? err.message : "Failed to send.");
+    } finally {
+      setSendingNow(false);
+    }
+  }
 
   async function decide(status: "shortlisted_phase2" | "rejected") {
     setUpdating(true);
@@ -174,6 +195,16 @@ export function TeamDetailPanel({
                 <Field label="Heard about us via" value={team.heard_about_us} />
                 <Field label="Emergency contact" value={team.emergency_contact_name} />
                 <Field label="Emergency phone" value={team.emergency_contact_phone} />
+                <div className="col-span-2 mt-1 flex items-center gap-3">
+                  <button
+                    onClick={sendNow}
+                    disabled={sendingNow}
+                    className="rounded-lg border border-marigold/40 px-3 py-1.5 text-xs font-semibold text-marigold hover:bg-marigold/10 disabled:opacity-50"
+                  >
+                    {sendingNow ? "Sending..." : "✉ Send login email now"}
+                  </button>
+                  {sendNowResult && <p className="text-xs text-ink-light">{sendNowResult}</p>}
+                </div>
               </DetailSection>
 
               {members.length > 0 && (
