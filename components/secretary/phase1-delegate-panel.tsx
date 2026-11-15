@@ -21,7 +21,8 @@ export function Phase1DelegatePanel({
   const [result, setResult] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
 
-  const allSelected = reviewers.length > 0 && selected.size === reviewers.length;
+  const chiefAmbassadors = useMemo(() => reviewers.filter((r) => r.role === "chief_ambassador"), [reviewers]);
+  const ambassadors = useMemo(() => reviewers.filter((r) => r.role === "ambassador"), [reviewers]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -32,8 +33,15 @@ export function Phase1DelegatePanel({
     });
   }
 
-  function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(reviewers.map((r) => r.id)));
+  function toggleGroup(group: Reviewer[], allSelected: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const r of group) {
+        if (allSelected) next.delete(r.id);
+        else next.add(r.id);
+      }
+      return next;
+    });
   }
 
   const perReviewer = useMemo(() => {
@@ -125,48 +133,23 @@ export function Phase1DelegatePanel({
             )}
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-line">
-            <div className="flex items-center gap-2 border-b border-line bg-paper px-3 py-2">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="h-4 w-4 rounded border-line accent-marigold"
-              />
-              <span className="text-xs font-semibold text-ink">
-                Select all ({reviewers.length} reviewers)
-              </span>
-            </div>
-            <div className="max-h-64 divide-y divide-line overflow-y-auto">
-              {reviewers.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-muted">
-                  No Ambassador or Chief Ambassador accounts exist yet.
-                </p>
-              ) : (
-                reviewers.map((r) => (
-                  <label
-                    key={r.id}
-                    className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5 hover:bg-paper"
-                  >
-                    <span className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(r.id)}
-                        onChange={() => toggle(r.id)}
-                        className="h-4 w-4 rounded border-line accent-marigold"
-                      />
-                      <span className="text-sm text-ink">{r.full_name}</span>
-                      <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
-                        {r.role.replace("_", " ")}
-                      </span>
-                    </span>
-                    <span className="text-xs text-muted">
-                      {r.assigned_count} assigned · {r.scored_count} scored
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <ReviewerGroupTable
+              title="Chief Ambassadors"
+              group={chiefAmbassadors}
+              selected={selected}
+              onToggle={toggle}
+              onToggleGroup={toggleGroup}
+              emptyText="No Chief Ambassador accounts exist yet."
+            />
+            <ReviewerGroupTable
+              title="Ambassadors"
+              group={ambassadors}
+              selected={selected}
+              onToggle={toggle}
+              onToggleGroup={toggleGroup}
+              emptyText="No Ambassador accounts exist yet."
+            />
           </div>
 
           {error && (
@@ -191,6 +174,66 @@ export function Phase1DelegatePanel({
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+function ReviewerGroupTable({
+  title,
+  group,
+  selected,
+  onToggle,
+  onToggleGroup,
+  emptyText,
+}: {
+  title: string;
+  group: Reviewer[];
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+  onToggleGroup: (group: Reviewer[], allSelected: boolean) => void;
+  emptyText: string;
+}) {
+  const allSelected = group.length > 0 && group.every((r) => selected.has(r.id));
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-line">
+      <div className="flex items-center gap-2 border-b border-line bg-paper px-3 py-2">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          disabled={group.length === 0}
+          onChange={() => onToggleGroup(group, allSelected)}
+          className="h-4 w-4 rounded border-line accent-marigold"
+        />
+        <span className="text-xs font-semibold text-ink">
+          {title} ({group.length})
+        </span>
+      </div>
+      <div className="max-h-64 divide-y divide-line overflow-y-auto">
+        {group.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-muted">{emptyText}</p>
+        ) : (
+          group.map((r) => (
+            <label
+              key={r.id}
+              className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5 hover:bg-paper"
+            >
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selected.has(r.id)}
+                  onChange={() => onToggle(r.id)}
+                  className="h-4 w-4 rounded border-line accent-marigold"
+                />
+                <span className="text-sm text-ink">{r.full_name}</span>
+              </span>
+              <span className="text-xs text-muted">
+                {r.assigned_count} assigned · {r.scored_count} scored
+              </span>
+            </label>
+          ))
+        )}
+      </div>
     </div>
   );
 }

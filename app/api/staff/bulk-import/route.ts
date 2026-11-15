@@ -36,11 +36,17 @@ function cellText(row: ExcelJS.Row, col: number | null): string {
   return String(v).trim();
 }
 
-// Password scheme per the Secretary's spec: lastname_projectcode, lowercased.
-function makePassword(lastName: string, projectCode: string): string {
+// Password scheme: lastname_<first 4 chars of email local-part>, lowercased —
+// same scheme as Chief Ambassadors and Mentors. Ambassadors are no longer
+// tied to one project at import time — the Secretary now delegates pitch
+// deck review to them afterward via the Phase 2 delegation panel, the same
+// way Chief Ambassadors are delegated, so there's no project code to fold
+// into the password or assign at creation.
+function makePassword(lastName: string, email: string): string {
   const cleanLast = lastName.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const cleanCode = projectCode.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return `${cleanLast}_${cleanCode}`;
+  const localPart = email.split("@")[0] ?? "";
+  const cleanLocal = localPart.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 4);
+  return `${cleanLast}_${cleanLocal}`;
 }
 
 export async function POST(request: Request) {
@@ -97,14 +103,10 @@ export async function POST(request: Request) {
     const firstNameCol = findColumn(headerRow, "First Name", "First name");
     const lastNameCol = findColumn(headerRow, "Last Name", "Last name");
     const emailCol = findColumn(headerRow, "Email", "Email ID", "Mail ID");
-    const projectCodeCol = findColumn(headerRow, "Project Code", "Project code");
 
-    if (!firstNameCol || !lastNameCol || !emailCol || !projectCodeCol) {
+    if (!firstNameCol || !lastNameCol || !emailCol) {
       return NextResponse.json(
-        {
-          error:
-            'Expected columns "First Name", "Last Name", "Email", and "Project Code" (used to set the initial password and assignment) — one or more wasn\'t found.',
-        },
+        { error: 'Expected columns "First Name", "Last Name", and "Email" — one or more wasn\'t found.' },
         { status: 400 }
       );
     }
@@ -121,30 +123,19 @@ export async function POST(request: Request) {
       const firstName = cellText(row, firstNameCol);
       const lastName = cellText(row, lastNameCol);
       const email = cellText(row, emailCol).toLowerCase();
-      const projectCode = cellText(row, projectCodeCol).toUpperCase();
-      if (!firstName && !lastName && !email && !projectCode) continue; // blank row
+      if (!firstName && !lastName && !email) continue; // blank row
 
-      if (!firstName || !lastName || !email || !projectCode) {
+      if (!firstName || !lastName || !email) {
         results.push({
           email: email || `(row ${rowNumber})`,
           status: "error",
-          detail: "Missing First Name, Last Name, Email, or Project Code.",
+          detail: "Missing First Name, Last Name, or Email.",
         });
         continue;
       }
 
-      const { data: team } = await admin
-        .from("teams")
-        .select("id")
-        .eq("project_code", projectCode)
-        .maybeSingle();
-      if (!team) {
-        results.push({ email, status: "error", detail: `Project code "${projectCode}" not found.` });
-        continue;
-      }
-
       const fullName = `${firstName} ${lastName}`;
-      const password = makePassword(lastName, projectCode);
+      const password = makePassword(lastName, email);
 
       const { data: authData, error: authErr } = await admin.auth.admin.createUser({
         email,
@@ -168,21 +159,12 @@ export async function POST(request: Request) {
         email,
         role,
       });
-      if (profileErr) {
-        results.push({ email, status: "error", detail: `Account created but profile failed: ${profileErr.message}` });
-        continue;
-      }
-
-      const { error: assignErr } = await admin
-        .from("project_assignments")
-        .insert({ team_id: team.id, staff_id: authData.user.id, assignment_role: role });
-
       results.push({
         email,
-        status: "created",
-        detail: assignErr
-          ? `Account created (password: ${password}) but couldn't assign to ${projectCode}: ${assignErr.message}`
-          : `Account created (password: ${password}), assigned to ${projectCode}.`,
+        status: profileErr ? "error" : "created",
+        detail: profileErr
+          ? `Account created but profile failed: ${profileErr.message}`
+          : `Account created (password: ${password}).`,
       });
     }
 
