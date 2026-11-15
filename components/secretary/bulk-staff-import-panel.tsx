@@ -60,8 +60,9 @@ function UploadButton({ role, label }: { role: "ambassador"; label: string }) {
     <div className="rounded-xl border border-line bg-paper p-4">
       <p className="text-sm font-semibold text-ink">{label}</p>
       <p className="mt-1 text-xs text-muted">
-        Columns: First Name, Last Name, Email, Project Code. Login = Email, initial password =
-        lastname_projectcode (lowercased) — also assigns them to that project.
+        Columns: First Name, Last Name, Email. No Project Code needed — projects are delegated to
+        Ambassadors afterward via the Phase 2 delegation panel, same as Chief Ambassadors. Login =
+        Email, initial password = lastname_&lt;first 4 of email&gt; (lowercased).
       </p>
       <input
         ref={inputRef}
@@ -218,8 +219,9 @@ export function BulkStaffImportPanel() {
         Bulk Import Mentors, Ambassadors &amp; Chief Ambassadors
       </h2>
       <p className="mt-1 text-xs text-muted">
-        Upload separate spreadsheets per role — Mentors (by sector preference), Ambassadors (by
-        project), Chief Ambassadors (no project needed) — to create their portal accounts.
+        Upload separate spreadsheets per role — Mentors (by sector preference), Ambassadors and
+        Chief Ambassadors (no project needed at import, delegated afterward) — to create their
+        portal accounts.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <MentorSectorImportButton />
