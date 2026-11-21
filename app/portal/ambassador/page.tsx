@@ -104,7 +104,7 @@ export default async function AmbassadorPortal() {
   const { data: phase1RowsRaw } = await supabase
     .from("phase1_submissions")
     .select(
-      "id, team_id, pitch_deck_url, score, teams(project_code, project_name, college_name, sectors(prefix))"
+      "id, team_id, pitch_deck_url, score, score_innovation, score_social_impact, score_feasibility, score_scalability, score_problem_understanding, teams(project_code, project_name, college_name, sectors(prefix))"
     )
     .order("created_at", { ascending: false });
 
@@ -124,6 +124,11 @@ export default async function AmbassadorPortal() {
       sector_prefix: team?.sectors?.prefix ?? "—",
       pitch_deck_url: r.pitch_deck_url,
       score: r.score,
+      score_innovation: r.score_innovation,
+      score_social_impact: r.score_social_impact,
+      score_feasibility: r.score_feasibility,
+      score_scalability: r.score_scalability,
+      score_problem_understanding: r.score_problem_understanding,
     };
   });
 
