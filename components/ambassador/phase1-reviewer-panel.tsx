@@ -80,8 +80,7 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
           <p className="mt-1 text-sm text-muted">
             Open each pitch deck and grade it 0–10 on 5 criteria — Innovation/Originality, Social
             Impact, Feasibility, Scalability, and Problem Understanding & Solution Approach. The
-            average of all 5 becomes the final score, reflected immediately in the Secretary's
-            master spreadsheet.
+            average of all 5 becomes the final score.
           </p>
         </div>
         <div className="flex gap-3">
