@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Phase1ScoreModal } from "./phase1-score-modal";
 
 type Row = {
   submission_id: string;
@@ -12,6 +13,11 @@ type Row = {
   sector_prefix: string;
   pitch_deck_url: string | null;
   score: number | null;
+  score_innovation: number | null;
+  score_social_impact: number | null;
+  score_feasibility: number | null;
+  score_scalability: number | null;
+  score_problem_understanding: number | null;
 };
 
 function StorageLink({ path }: { path: string }) {
@@ -43,62 +49,10 @@ function StorageLink({ path }: { path: string }) {
   );
 }
 
-function ScoreInput({ row, onSaved }: { row: Row; onSaved: (submissionId: string, score: number) => void }) {
-  const [value, setValue] = useState(row.score?.toString() ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function save() {
-    const parsed = Number(value);
-    if (value.trim() === "" || Number.isNaN(parsed) || parsed < 0 || parsed > 10 || !Number.isInteger(parsed)) {
-      setError("0–10 only");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const supabase = createClient();
-      const { error: updateErr } = await supabase
-        .from("phase1_submissions")
-        .update({ score: parsed })
-        .eq("id", row.submission_id);
-      if (updateErr) throw updateErr;
-      onSaved(row.submission_id, parsed);
-    } catch (err) {
-      console.error("Phase 1 score save failed:", err);
-      setError("Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <input
-        type="number"
-        min={0}
-        max={10}
-        step={1}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        className="w-16 rounded-md border border-line bg-paper px-2 py-1 text-sm text-ink outline-none focus:border-marigold"
-        placeholder="/10"
-      />
-      <button
-        onClick={save}
-        disabled={saving}
-        className="rounded-md bg-marigold px-2.5 py-1 text-xs font-semibold text-ink disabled:opacity-50"
-      >
-        {saving ? "..." : "Save"}
-      </button>
-      {error && <span className="text-xs text-red-400">{error}</span>}
-    </div>
-  );
-}
-
 export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
   const [rows, setRows] = useState(initialRows);
   const [search, setSearch] = useState("");
+  const [scoringId, setScoringId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -124,8 +78,10 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
             Phase 2 Pitch Decks Assigned To You
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Open each pitch deck and give it a score out of 10 — every score you save is reflected
-            immediately in the Secretary's master spreadsheet.
+            Open each pitch deck and grade it 0–10 on 5 criteria — Innovation/Originality, Social
+            Impact, Feasibility, Scalability, and Problem Understanding & Solution Approach. The
+            average of all 5 becomes the final score, reflected immediately in the Secretary's
+            master spreadsheet.
           </p>
         </div>
         <div className="flex gap-3">
@@ -173,14 +129,16 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
                   {r.pitch_deck_url ? <StorageLink path={r.pitch_deck_url} /> : <span className="text-muted">None</span>}
                 </td>
                 <td className="px-4 py-3">
-                  <ScoreInput
-                    row={r}
-                    onSaved={(submissionId, score) =>
-                      setRows((prev) =>
-                        prev.map((row) => (row.submission_id === submissionId ? { ...row, score } : row))
-                      )
-                    }
-                  />
+                  <button
+                    onClick={() => setScoringId(r.submission_id)}
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                      r.score != null
+                        ? "border border-line text-ink-light hover:border-marigold hover:text-marigold"
+                        : "bg-marigold text-ink"
+                    }`}
+                  >
+                    {r.score != null ? `${r.score}/10 · Edit` : "Score Project"}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -188,6 +146,34 @@ export function Phase1ReviewerPanel({ initialRows }: { initialRows: Row[] }) {
         </table>
        </div>
       </div>
+
+      {scoringId &&
+        (() => {
+          const row = rows.find((r) => r.submission_id === scoringId);
+          if (!row) return null;
+          return (
+            <Phase1ScoreModal
+              submissionId={row.submission_id}
+              projectCode={row.project_code}
+              projectName={row.project_name}
+              initialScores={{
+                score_innovation: row.score_innovation,
+                score_social_impact: row.score_social_impact,
+                score_feasibility: row.score_feasibility,
+                score_scalability: row.score_scalability,
+                score_problem_understanding: row.score_problem_understanding,
+              }}
+              onClose={() => setScoringId(null)}
+              onSaved={(submissionId, scores, average) =>
+                setRows((prev) =>
+                  prev.map((row) =>
+                    row.submission_id === submissionId ? { ...row, ...scores, score: average } : row
+                  )
+                )
+              }
+            />
+          );
+        })()}
     </div>
   );
 }
