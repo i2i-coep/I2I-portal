@@ -2,7 +2,44 @@
 
 import { useRef, useState } from "react";
 
-type RowResult = { email: string; status: "created" | "skipped" | "error"; detail: string };
+type RowResult = { email: string; status: "created" | "skipped" | "error"; detail: string; staffId?: string };
+
+function SendNowButton({ staffId }: { staffId: string }) {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function send() {
+    setSending(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/secretary/send-notification-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || `Failed (${res.status})`);
+      setResult("Sent ✓");
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : "Failed to send.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <span className="ml-2 inline-flex items-center gap-1.5">
+      <button
+        onClick={send}
+        disabled={sending}
+        className="rounded-md border border-marigold/40 px-1.5 py-0.5 text-[10px] font-semibold text-marigold hover:bg-marigold/10 disabled:opacity-50"
+      >
+        {sending ? "Sending..." : "✉ Send now"}
+      </button>
+      {result && <span className="text-[10px] text-ink-light">{result}</span>}
+    </span>
+  );
+}
 
 function ResultsList({ results }: { results: RowResult[] }) {
   const created = results.filter((r) => r.status === "created").length;
@@ -23,6 +60,7 @@ function ResultsList({ results }: { results: RowResult[] }) {
             }
           >
             {r.email}: {r.detail}
+            {r.status === "created" && r.staffId && <SendNowButton staffId={r.staffId} />}
           </p>
         ))}
       </div>

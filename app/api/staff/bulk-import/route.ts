@@ -116,6 +116,7 @@ export async function POST(request: Request) {
       email: string;
       status: "created" | "skipped" | "error";
       detail: string;
+      staffId?: string;
     }[] = [];
 
     for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
@@ -159,12 +160,34 @@ export async function POST(request: Request) {
         email,
         role,
       });
+
+      if (!profileErr) {
+        // Queued, not sent synchronously — same reasoning as the participant
+        // import: a large batch sending emails one by one inside a single
+        // request risks the function timing out. The daily notification
+        // cron drains this queue.
+        await admin.from("notification_queue").insert({
+          type: "staff_account_created",
+          channel: "email",
+          staff_id: authData.user.id,
+          recipient_email: email,
+          payload: {
+            full_name: fullName,
+            role_label: "Ambassador",
+            login_email: email,
+            login_password: password,
+          },
+          status: "pending",
+        });
+      }
+
       results.push({
         email,
         status: profileErr ? "error" : "created",
+        staffId: profileErr ? undefined : authData.user.id,
         detail: profileErr
           ? `Account created but profile failed: ${profileErr.message}`
-          : `Account created (password: ${password}).`,
+          : `Account created (password: ${password}, confirmation email queued).`,
       });
     }
 

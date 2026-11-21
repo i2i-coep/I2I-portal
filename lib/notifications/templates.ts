@@ -65,6 +65,14 @@ export function emailTemplate(type: string, payload: Payload): { subject: string
         subject: `🎉 ${payload.project_code} has been selected for Phase 3!`,
         body: `Congratulations! ${payload.team_name} (${payload.project_code}) has been selected for Phase 3 — Mentorship. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.`,
       };
+    case "staff_account_created":
+      // Same plaintext-password tradeoff as registration_confirmed, for the
+      // same reason — avoids depending on the recipient setting their own
+      // password via a link before they can access the portal.
+      return {
+        subject: `Welcome to I2I — your ${payload.role_label} portal login`,
+        body: `Hi ${payload.full_name},\n\nYour I2I ${payload.role_label} account has been created.\n\nLogin email: ${payload.login_email}\nPassword: ${payload.login_password}\n\nLog in at: ${process.env.NEXT_PUBLIC_SITE_URL}/login?portal=ambassador\n\nWe recommend changing your password after your first login.`,
+      };
     default:
       return { subject: "I2I Portal Update", body: "You have a new update on the I2I portal." };
   }
@@ -137,6 +145,14 @@ export const EMAIL_TEMPLATE_TYPES: {
     defaultBody:
       "Congratulations! {{team_name}} ({{project_code}}) has been selected for Phase 3 — Mentorship. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.",
     variables: ["project_code", "team_name"],
+  },
+  {
+    type: "staff_account_created",
+    label: "Staff account created (Ambassador)",
+    defaultSubject: "Welcome to I2I — your {{role_label}} portal login",
+    defaultBody:
+      "Hi {{full_name}},\n\nYour I2I {{role_label}} account has been created.\n\nLogin email: {{login_email}}\nPassword: {{login_password}}\n\nLog in at: {{site_url}}/login?portal=ambassador\n\nWe recommend changing your password after your first login.",
+    variables: ["full_name", "role_label", "login_email", "login_password", "site_url"],
   },
 ];
 

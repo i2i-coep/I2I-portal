@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dispatchNotification } from "@/lib/notifications";
 
-// Lets the Secretary force an immediate send for one team instead of
-// waiting for the daily /api/notifications/process cron to drain the
-// queue — same dispatch function the cron uses, just scoped to one team
-// and triggered synchronously from the portal.
+// Lets the Secretary force an immediate send for one team or staff member
+// instead of waiting for the daily /api/notifications/process cron to drain
+// the queue — same dispatch function the cron uses, just scoped to one
+// recipient and triggered synchronously from the portal.
 export async function POST(request: Request) {
   try {
     const authed = await createClient();
@@ -27,25 +27,27 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null);
     const teamId = body?.teamId;
-    if (!teamId || typeof teamId !== "string") {
-      return NextResponse.json({ error: "Missing teamId" }, { status: 400 });
+    const staffId = body?.staffId;
+    if ((!teamId || typeof teamId !== "string") && (!staffId || typeof staffId !== "string")) {
+      return NextResponse.json({ error: "Missing teamId or staffId" }, { status: 400 });
     }
 
     const admin = createAdminClient();
-    const { data: pending, error } = await admin
+    let query = admin
       .from("notification_queue")
       .select("*")
-      .eq("team_id", teamId)
       .eq("status", "pending")
       .eq("channel", "email")
       .order("created_at", { ascending: true });
+    query = teamId ? query.eq("team_id", teamId) : query.eq("staff_id", staffId);
+    const { data: pending, error } = await query;
 
     if (error) {
       console.error("Send notification now: queue lookup failed:", error);
       return NextResponse.json({ error: "Couldn't read the notification queue." }, { status: 500 });
     }
     if (!pending || pending.length === 0) {
-      return NextResponse.json({ error: "No pending email queued for this team." }, { status: 404 });
+      return NextResponse.json({ error: "No pending email queued for this recipient." }, { status: 404 });
     }
 
     let sent = 0;
@@ -72,8 +74,8 @@ export async function POST(request: Request) {
       actor_id: user.id,
       actor_name: "Secretary",
       action: "notification_sent_now",
-      target_type: "team",
-      target_id: teamId,
+      target_type: teamId ? "team" : "staff_profiles",
+      target_id: teamId || staffId,
       details: { sent, failed: errors.length },
     });
 
