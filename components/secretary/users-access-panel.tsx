@@ -41,6 +41,8 @@ export function UsersAccessPanel({
   const [editHeadTitle, setEditHeadTitle] = useState("");
   const [rowSavingId, setRowSavingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sendResult, setSendResult] = useState<{ id: string; message: string } | null>(null);
 
   function startEdit(s: Staff) {
     setEditingId(s.id);
@@ -89,6 +91,25 @@ export function UsersAccessPanel({
       setRowError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setRowSavingId(null);
+    }
+  }
+
+  async function sendNow(s: Staff) {
+    setSendingId(s.id);
+    setSendResult(null);
+    try {
+      const res = await fetch("/api/secretary/send-notification-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId: s.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Send failed");
+      setSendResult({ id: s.id, message: json.message || "Sent." });
+    } catch (e) {
+      setSendResult({ id: s.id, message: e instanceof Error ? e.message : "Send failed." });
+    } finally {
+      setSendingId(null);
     }
   }
 
@@ -287,7 +308,7 @@ export function UsersAccessPanel({
                         </button>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => startEdit(s)}
                           className="rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-ink-light hover:border-marigold/50"
@@ -310,6 +331,16 @@ export function UsersAccessPanel({
                               ? "Deactivate"
                               : "Reactivate"}
                         </button>
+                        <button
+                          onClick={() => sendNow(s)}
+                          disabled={sendingId === s.id}
+                          className="rounded-md border border-marigold/40 px-2.5 py-1.5 text-xs font-semibold text-marigold hover:bg-marigold/10 disabled:opacity-50"
+                        >
+                          {sendingId === s.id ? "Sending..." : "✉ Send login email now"}
+                        </button>
+                        {sendResult?.id === s.id && (
+                          <span className="text-[11px] text-ink-light">{sendResult.message}</span>
+                        )}
                       </div>
                     )}
                   </td>
