@@ -1,69 +1,9 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PortalHeader } from "@/components/portal-header";
-import { PageShell } from "@/components/page-shell";
-import { PortfolioWorkspace } from "@/components/portfolio-workspace";
 import { Phase2ReviewerPanel } from "@/components/ambassador/phase2-reviewer-panel";
 import { Phase1ReviewerPanel } from "@/components/ambassador/phase1-reviewer-panel";
 
 export default async function AmbassadorPortal() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data: staff } = await supabase
-    .from("staff_profiles")
-    .select("full_name, role, head_title")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // Guard: Chief Ambassadors, Ambassadors, and Heads belong here. Secretary
-  // has their own portal; Mentors have their own separate portal.
-  if (!staff || !["chief_ambassador", "ambassador", "head"].includes(staff.role)) {
-    redirect("/dashboard");
-  }
-
-  // Explicitly scoped to project_assignments (Phase 3 mentor/ambassador),
-  // not just "whatever RLS allows" — RLS on teams also grants read access
-  // for Phase 2 reviewer delegations now, which is a different relationship
-  // and shouldn't leak into this Phase 3 portfolio workspace.
-  const { data: assignedTeamIds } = await supabase
-    .from("project_assignments")
-    .select("team_id")
-    .eq("staff_id", user.id);
-  const portfolioTeamIds = (assignedTeamIds ?? []).map((a) => a.team_id);
-
-  const { data: teamsRaw } = portfolioTeamIds.length
-    ? await supabase
-        .from("teams")
-        .select("id, project_code, team_name, college_name, status, leader_phone")
-        .in("id", portfolioTeamIds)
-        .order("created_at", { ascending: false })
-    : { data: [] };
-
-  // Phase 1 pitch deck (the upload moved there) + Phase 2 approved funding,
-  // joined manually since they're separate tables (kept simple rather than
-  // a Postgres view for now).
-  const teamIds = (teamsRaw ?? []).map((t) => t.id);
-  const [{ data: phase1ForPortfolio }, { data: phase2 }] = teamIds.length
-    ? await Promise.all([
-        supabase.from("phase1_submissions").select("team_id, pitch_deck_url").in("team_id", teamIds),
-        supabase.from("phase2_applications").select("team_id, amount_approved").in("team_id", teamIds),
-      ])
-    : [{ data: [] }, { data: [] }];
-
-  const teams = (teamsRaw ?? []).map((t) => {
-    const p1 = phase1ForPortfolio?.find((p) => p.team_id === t.id);
-    const p2 = phase2?.find((p) => p.team_id === t.id);
-    return {
-      ...t,
-      pitch_deck_url: p1?.pitch_deck_url ?? null,
-      amount_approved: p2?.amount_approved ?? null,
-    };
-  });
 
   // Phase 2 projects delegated to this staff member for review (Secretary's
   // "give access" flow) — RLS (is_phase2_reviewer) scopes this query to only
@@ -133,22 +73,9 @@ export default async function AmbassadorPortal() {
   });
 
   return (
-    <PageShell particles={false} theme="v0" scene3d className="flex min-h-screen flex-col">
-      <PortalHeader
-        portalLabel="Ambassador"
-        name={staff.full_name}
-        roleLabel={staff.head_title || staff.role.replace("_", " ")}
-      />
-      <main className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-10 sm:px-8">
-        <Phase1ReviewerPanel initialRows={phase1Rows} />
-        <Phase2ReviewerPanel initialRows={reviewRows} />
-        <PortfolioWorkspace
-          teams={teams}
-          role="ambassador"
-          currentUserId={user.id}
-          currentUserName={staff.full_name}
-        />
-      </main>
-    </PageShell>
+    <div className="mx-auto w-full max-w-6xl space-y-4">
+      <Phase1ReviewerPanel initialRows={phase1Rows} />
+      <Phase2ReviewerPanel initialRows={reviewRows} />
+    </div>
   );
 }
