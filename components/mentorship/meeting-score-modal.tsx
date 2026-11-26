@@ -3,46 +3,40 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { MEETING_CRITERIA_BY_TYPE, type CriterionKey, type ScoreCriterion } from "@/lib/mentorship/meeting-criteria";
 
-// PLACEHOLDER LABELS — the Secretary is sending the real 5 mentorship
-// scoring criteria separately (deliberately different from the Phase 2
-// rubric's criteria). Swap the `label` strings below once given; the
-// underlying column names (score_criterion_1..5) don't need to change.
-export const MEETING_SCORE_CRITERIA = [
-  { key: "score_criterion_1", label: "Criterion 1 (placeholder)" },
-  { key: "score_criterion_2", label: "Criterion 2 (placeholder)" },
-  { key: "score_criterion_3", label: "Criterion 3 (placeholder)" },
-  { key: "score_criterion_4", label: "Criterion 4 (placeholder)" },
-  { key: "score_criterion_5", label: "Criterion 5 (placeholder)" },
-] as const;
+// Back-compat default (Meet 1's set) for any caller that hasn't been
+// updated to pass its own week-specific `criteria` prop yet.
+export const MEETING_SCORE_CRITERIA = MEETING_CRITERIA_BY_TYPE["Meet 1"];
 
-type CriterionKey = (typeof MEETING_SCORE_CRITERIA)[number]["key"];
 type Scores = Record<CriterionKey, number | null>;
 
 export function MeetingScoreModal({
   meetingId,
   meetingLabel,
+  criteria = MEETING_SCORE_CRITERIA,
   initialScores,
   onClose,
   onSaved,
 }: {
   meetingId: string;
   meetingLabel: string;
+  criteria?: ScoreCriterion[];
   initialScores: Scores;
   onClose: () => void;
   onSaved: (meetingId: string, scores: Scores, average: number) => void;
 }) {
   const [values, setValues] = useState<Record<CriterionKey, string>>(() => {
     const init = {} as Record<CriterionKey, string>;
-    for (const c of MEETING_SCORE_CRITERIA) init[c.key] = initialScores[c.key]?.toString() ?? "";
+    for (const c of criteria) init[c.key] = initialScores[c.key]?.toString() ?? "";
     return init;
   });
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const parsed = MEETING_SCORE_CRITERIA.map((c) => Number(values[c.key]));
-  const allFilled = MEETING_SCORE_CRITERIA.every((c) => values[c.key].trim() !== "");
+  const parsed = criteria.map((c) => Number(values[c.key]));
+  const allFilled = criteria.every((c) => values[c.key].trim() !== "");
   const allValid =
     allFilled && parsed.every((n) => !Number.isNaN(n) && n >= 0 && n <= 10 && Number.isInteger(n));
   const average = allValid ? parsed.reduce((a, b) => a + b, 0) / parsed.length : null;
@@ -57,7 +51,7 @@ export function MeetingScoreModal({
     try {
       const supabase = createClient();
       const scores: Scores = {} as Scores;
-      for (const c of MEETING_SCORE_CRITERIA) scores[c.key] = Number(values[c.key]);
+      for (const c of criteria) scores[c.key] = Number(values[c.key]);
       const roundedAverage = Math.round(average * 100) / 100;
 
       const { error: updateErr } = await supabase
@@ -94,7 +88,7 @@ export function MeetingScoreModal({
         </div>
 
         <div className="mt-5 space-y-3">
-          {MEETING_SCORE_CRITERIA.map((c) => (
+          {criteria.map((c) => (
             <div key={c.key} className="flex items-center justify-between gap-3">
               <label className="text-sm text-ink-light">{c.label}</label>
               <input

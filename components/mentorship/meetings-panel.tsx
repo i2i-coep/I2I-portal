@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { MeetingScoreModal, MEETING_SCORE_CRITERIA } from "./meeting-score-modal";
+import { MeetingScoreModal } from "./meeting-score-modal";
 import { AmbassadorScoreModal } from "./ambassador-score-modal";
-
-const MEETING_TYPES = ["Meet 1", "Meet 2", "Meet 3", "Meet 4", "Meet 5", "Meet 6", "Meet 7", "Meet 8"];
+import { MEETING_TYPES, getCriteriaForMeetingType } from "@/lib/mentorship/meeting-criteria";
 
 type Proposal = {
   id: string;
@@ -316,6 +315,7 @@ export function MeetingsPanel({
         <MeetingScoreModal
           meetingId={scoringMeeting.id}
           meetingLabel={`Score: ${scoringMeeting.meeting_type}`}
+          criteria={getCriteriaForMeetingType(scoringMeeting.meeting_type)}
           initialScores={{
             score_criterion_1: scoringMeeting.score_criterion_1,
             score_criterion_2: scoringMeeting.score_criterion_2,
@@ -362,7 +362,7 @@ function RaiseMeetingRow({
   onRaising: (v: boolean) => void;
   onRaised: () => void;
 }) {
-  const [meetingType, setMeetingType] = useState(MEETING_TYPES[0]);
+  const [meetingType, setMeetingType] = useState<string>(MEETING_TYPES[0]);
   const [date, setDate] = useState(proposal?.proposed_date ?? "");
   const [time, setTime] = useState(proposal?.proposed_time ?? "");
   const [meetLink, setMeetLink] = useState("");
@@ -462,5 +462,3 @@ function RaiseMeetingRow({
     </div>
   );
 }
-
-export { MEETING_SCORE_CRITERIA };
