@@ -32,27 +32,33 @@ create index if not exists idx_timeline_plan_entries_team on timeline_plan_entri
 
 alter table timeline_plan_entries enable row level security;
 
+-- drop-if-exists first so this file is safe to re-run after a partial failure.
+drop policy if exists timeline_plan_visible_to_team on timeline_plan_entries;
 create policy timeline_plan_visible_to_team on timeline_plan_entries
   for select using (is_team_member_or_staff(team_id));
 
 -- Leader-only insert/delete (the upload route re-derives team_id from
 -- leader_auth_id server-side, same pattern as apply-team-edit — never
 -- trusts a client-supplied team_id).
+drop policy if exists timeline_plan_leader_insert on timeline_plan_entries;
 create policy timeline_plan_leader_insert on timeline_plan_entries
   for insert with check (
     exists (select 1 from teams where id = team_id and leader_auth_id = auth.uid())
   );
 
+drop policy if exists timeline_plan_leader_delete on timeline_plan_entries;
 create policy timeline_plan_leader_delete on timeline_plan_entries
   for delete using (
     exists (select 1 from teams where id = team_id and leader_auth_id = auth.uid())
   );
 
 -- The team (and only the team) can tick off their own tasks as done.
+drop policy if exists timeline_plan_leader_update on timeline_plan_entries;
 create policy timeline_plan_leader_update on timeline_plan_entries
   for update using (
     exists (select 1 from teams where id = team_id and leader_auth_id = auth.uid())
   );
 
+drop policy if exists timeline_plan_secretary_all on timeline_plan_entries;
 create policy timeline_plan_secretary_all on timeline_plan_entries
   for all using (is_secretary());

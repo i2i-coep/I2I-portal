@@ -41,6 +41,9 @@ alter table meetings
 -- Ambassadors need to update a meeting they raised (e.g. fix the pasted
 -- link), not just insert it. Row-scoped only, same trust model this table
 -- already used for meetings_mentor_grade (no column guard trigger here).
+-- drop-if-exists first everywhere in this file so it's safe to re-run after
+-- a partial failure, rather than aborting on "policy already exists".
+drop policy if exists meetings_ambassador_update on meetings;
 create policy meetings_ambassador_update on meetings
   for update using (
     exists (
@@ -68,9 +71,11 @@ create index if not exists idx_meeting_proposals_team on meeting_proposals(team_
 
 alter table meeting_proposals enable row level security;
 
+drop policy if exists meeting_proposals_visible_to_team on meeting_proposals;
 create policy meeting_proposals_visible_to_team on meeting_proposals
   for select using (is_team_member_or_staff(team_id));
 
+drop policy if exists meeting_proposals_ambassador_insert on meeting_proposals;
 create policy meeting_proposals_ambassador_insert on meeting_proposals
   for insert with check (
     exists (
@@ -82,6 +87,7 @@ create policy meeting_proposals_ambassador_insert on meeting_proposals
 
 -- Team leader accepts/declines; the proposing ambassador can also update
 -- (e.g. withdraw it before the team responds).
+drop policy if exists meeting_proposals_respond on meeting_proposals;
 create policy meeting_proposals_respond on meeting_proposals
   for update using (
     exists (select 1 from teams where id = team_id and leader_auth_id = auth.uid())
@@ -95,27 +101,39 @@ create policy meeting_proposals_respond on meeting_proposals
 -- (id = auth id) and a team leader (leader_auth_id = auth id).
 -- ----------------------------------------------------------------------------
 create table if not exists in_app_notifications (
-  id uuid primary key default gen_random_uuid(),
-  recipient_auth_id uuid not null references auth.users(id) on delete cascade,
-  type text not null,
-  title text not null,
-  body text,
-  team_id uuid references teams(id) on delete cascade,
-  meeting_id uuid references meetings(id) on delete cascade,
-  is_read boolean not null default false,
-  created_at timestamptz not null default now()
+  id uuid primary key default gen_random_uuid()
 );
+
+-- Explicit ADD COLUMN IF NOT EXISTS for every column, not just inline in
+-- the CREATE TABLE — makes this safe to re-run even if an earlier partial
+-- run already created the table in some other shape.
+alter table in_app_notifications
+  add column if not exists recipient_auth_id uuid references auth.users(id) on delete cascade,
+  add column if not exists type text,
+  add column if not exists title text,
+  add column if not exists body text,
+  add column if not exists team_id uuid references teams(id) on delete cascade,
+  add column if not exists meeting_id uuid references meetings(id) on delete cascade,
+  add column if not exists is_read boolean not null default false,
+  add column if not exists created_at timestamptz not null default now();
+
+alter table in_app_notifications alter column recipient_auth_id set not null;
+alter table in_app_notifications alter column type set not null;
+alter table in_app_notifications alter column title set not null;
 
 create index if not exists idx_in_app_notifications_recipient on in_app_notifications(recipient_auth_id, is_read, created_at);
 
 alter table in_app_notifications enable row level security;
 
+drop policy if exists in_app_notifications_own on in_app_notifications;
 create policy in_app_notifications_own on in_app_notifications
   for select using (recipient_auth_id = auth.uid());
 
+drop policy if exists in_app_notifications_mark_read on in_app_notifications;
 create policy in_app_notifications_mark_read on in_app_notifications
   for update using (recipient_auth_id = auth.uid());
 
+drop policy if exists in_app_notifications_secretary_read on in_app_notifications;
 create policy in_app_notifications_secretary_read on in_app_notifications
   for select using (is_secretary());
 
