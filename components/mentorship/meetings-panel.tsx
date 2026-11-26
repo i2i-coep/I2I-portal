@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MeetingScoreModal, MEETING_SCORE_CRITERIA } from "./meeting-score-modal";
+import { AmbassadorScoreModal } from "./ambassador-score-modal";
 
 const MEETING_TYPES = ["Meet 1", "Meet 2", "Meet 3", "Meet 4", "Meet 5", "Meet 6", "Meet 7", "Meet 8"];
 
@@ -22,12 +23,20 @@ type Meeting = {
   meet_link: string | null;
   mentor_confirmed: boolean;
   mentor_score: number | null;
+  ambassador_score: number | null;
+  members_present: number | null;
+  minutes_notes: string | null;
   status: "awaiting_grading" | "completed";
   score_criterion_1: number | null;
   score_criterion_2: number | null;
   score_criterion_3: number | null;
   score_criterion_4: number | null;
   score_criterion_5: number | null;
+  ambassador_score_criterion_1: number | null;
+  ambassador_score_criterion_2: number | null;
+  ambassador_score_criterion_3: number | null;
+  ambassador_score_criterion_4: number | null;
+  ambassador_score_criterion_5: number | null;
 };
 
 function formatWhen(date: string, time: string | null) {
@@ -53,6 +62,7 @@ export function MeetingsPanel({
   const [proposing, setProposing] = useState(false);
   const [raisingProposalId, setRaisingProposalId] = useState<string | null>(null);
   const [scoringMeeting, setScoringMeeting] = useState<Meeting | null>(null);
+  const [scoringAmbassadorMeeting, setScoringAmbassadorMeeting] = useState<Meeting | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -66,7 +76,7 @@ export function MeetingsPanel({
       supabase
         .from("meetings")
         .select(
-          "id, meeting_type, meeting_date, meeting_time, meet_link, mentor_confirmed, mentor_score, status, score_criterion_1, score_criterion_2, score_criterion_3, score_criterion_4, score_criterion_5"
+          "id, meeting_type, meeting_date, meeting_time, meet_link, mentor_confirmed, mentor_score, ambassador_score, members_present, minutes_notes, status, score_criterion_1, score_criterion_2, score_criterion_3, score_criterion_4, score_criterion_5, ambassador_score_criterion_1, ambassador_score_criterion_2, ambassador_score_criterion_3, ambassador_score_criterion_4, ambassador_score_criterion_5"
         )
         .eq("team_id", teamId)
         .order("meeting_date", { ascending: false }),
@@ -276,7 +286,22 @@ export function MeetingsPanel({
                         </button>
                       )}
                       {m.mentor_score != null && (
-                        <span className="text-xs font-semibold text-marigold">{m.mentor_score}/10</span>
+                        <span className="text-xs font-semibold text-marigold" title="Mentor score">
+                          M: {m.mentor_score}/10
+                        </span>
+                      )}
+                      {role === "ambassador" && m.ambassador_score == null && (
+                        <button
+                          onClick={() => setScoringAmbassadorMeeting(m)}
+                          className="rounded-md bg-marigold px-2.5 py-1 text-xs font-semibold text-ink"
+                        >
+                          Score Meeting
+                        </button>
+                      )}
+                      {m.ambassador_score != null && (
+                        <span className="text-xs font-semibold text-marigold" title="Ambassador score">
+                          A: {m.ambassador_score}/10
+                        </span>
                       )}
                     </div>
                   </div>
@@ -299,6 +324,24 @@ export function MeetingsPanel({
             score_criterion_5: scoringMeeting.score_criterion_5,
           }}
           onClose={() => setScoringMeeting(null)}
+          onSaved={() => load()}
+        />
+      )}
+
+      {scoringAmbassadorMeeting && (
+        <AmbassadorScoreModal
+          meetingId={scoringAmbassadorMeeting.id}
+          meetingLabel={`Score: ${scoringAmbassadorMeeting.meeting_type}`}
+          initialScores={{
+            ambassador_score_criterion_1: scoringAmbassadorMeeting.ambassador_score_criterion_1,
+            ambassador_score_criterion_2: scoringAmbassadorMeeting.ambassador_score_criterion_2,
+            ambassador_score_criterion_3: scoringAmbassadorMeeting.ambassador_score_criterion_3,
+            ambassador_score_criterion_4: scoringAmbassadorMeeting.ambassador_score_criterion_4,
+            ambassador_score_criterion_5: scoringAmbassadorMeeting.ambassador_score_criterion_5,
+          }}
+          initialMembersPresent={scoringAmbassadorMeeting.members_present}
+          initialMinutes={scoringAmbassadorMeeting.minutes_notes}
+          onClose={() => setScoringAmbassadorMeeting(null)}
           onSaved={() => load()}
         />
       )}
