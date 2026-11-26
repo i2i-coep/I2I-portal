@@ -128,6 +128,7 @@ export async function POST(request: Request) {
       email: string;
       status: "created" | "skipped" | "error";
       detail: string;
+      staffId?: string;
     }[] = [];
 
     for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
@@ -195,15 +196,31 @@ export async function POST(request: Request) {
         rankedSectors.map((r) => ({ staff_id: authData.user.id, sector_id: r.sector.id, priority: r.priority }))
       );
 
+      // Same as the Ambassador import — queued, not sent synchronously.
+      await admin.from("notification_queue").insert({
+        type: "staff_account_created",
+        channel: "email",
+        staff_id: authData.user.id,
+        recipient_email: email,
+        payload: {
+          full_name: fullName,
+          role_label: "Mentor",
+          login_email: email,
+          login_password: password,
+        },
+        status: "pending",
+      });
+
       const prefSummary = rankedSectors.map((r) => `${r.priority}. ${r.sector.prefix}`).join(", ");
       const unrecognizedNote = unrecognized.length > 0 ? ` (unrecognized: ${unrecognized.join(", ")})` : "";
 
       results.push({
         email,
         status: "created",
+        staffId: authData.user.id,
         detail: prefErr
-          ? `Account created (password: ${password}) but couldn't save sector preferences: ${prefErr.message}`
-          : `Account created (password: ${password}). Preferences: ${prefSummary}${unrecognizedNote}.`,
+          ? `Account created (password: ${password}, confirmation email queued) but couldn't save sector preferences: ${prefErr.message}`
+          : `Account created (password: ${password}, confirmation email queued). Preferences: ${prefSummary}${unrecognizedNote}.`,
       });
     }
 

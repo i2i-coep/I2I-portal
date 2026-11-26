@@ -32,8 +32,9 @@ export async function POST() {
         admin.from("sectors").select("id, prefix, display_name"),
         admin
           .from("phase2_applications")
-          .select("team_id, funding_status, teams(id, project_code, team_name, sector_id)")
-          .in("funding_status", ["approved", "partial"]),
+          .select("team_id, funding_status, mentor_requested, teams(id, project_code, team_name, sector_id)")
+          .in("funding_status", ["approved", "partial"])
+          .eq("mentor_requested", true),
         admin.from("project_assignments").select("team_id, staff_id, assignment_role"),
         admin.from("staff_profiles").select("id, full_name").eq("role", "mentor").eq("is_active", true),
         admin.from("mentor_sector_preferences").select("staff_id, sector_id, priority").order("priority", { ascending: true }),

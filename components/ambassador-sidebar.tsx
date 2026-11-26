@@ -9,6 +9,7 @@ import { Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
 import { ChangePasswordButton } from "./change-password-modal";
+import { NotificationBell } from "./notification-bell";
 
 function NavLinks({
   pathname,
@@ -25,9 +26,12 @@ function NavLinks({
 }) {
   return (
     <>
-      <div className="mb-6 flex items-center gap-2 px-2">
-        <Image src="/logos/i2i.png" alt="I2I" width={538} height={379} priority className="h-7 w-auto shrink-0" />
-        <span className="font-display text-sm font-semibold text-ink">Ambassador Portal</span>
+      <div className="mb-6 flex items-center justify-between gap-2 px-2">
+        <div className="flex items-center gap-2">
+          <Image src="/logos/i2i.png" alt="I2I" width={538} height={379} priority className="h-7 w-auto shrink-0" />
+          <span className="font-display text-sm font-semibold text-ink">Ambassador Portal</span>
+        </div>
+        <NotificationBell />
       </div>
 
       <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted">
@@ -46,15 +50,18 @@ function NavLinks({
           </span>
           Phase 2 – Pitch Deck Review
         </Link>
-        <span
-          className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-muted/60"
-          title="Not available yet"
+        <Link
+          href="/portal/ambassador/phase-3"
+          onClick={onNavigate}
+          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            pathname === "/portal/ambassador/phase-3" ? "bg-marigold/15 text-marigold" : "text-ink-light hover:bg-paper"
+          }`}
         >
           <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-current px-1 text-[10px]">
             3
           </span>
           Phase 3 – Mentorship
-        </span>
+        </Link>
         <Link
           href="/portal/ambassador/your-projects"
           onClick={onNavigate}
@@ -107,13 +114,16 @@ export function AmbassadorSidebar({ name, roleLabel }: { name: string; roleLabel
           <Image src="/logos/i2i.png" alt="I2I" width={538} height={379} priority className="h-7 w-auto shrink-0" />
           <span className="font-display text-sm font-semibold text-ink">Ambassador Portal</span>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          aria-label="Open menu"
-          className="rounded-lg border border-line p-2 text-ink-light"
-        >
-          <Menu className="size-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            className="rounded-lg border border-line p-2 text-ink-light"
+          >
+            <Menu className="size-5" />
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}

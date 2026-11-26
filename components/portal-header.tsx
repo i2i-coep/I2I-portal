@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
 import { ChangePasswordButton } from "./change-password-modal";
+import { NotificationBell } from "./notification-bell";
 
 export function PortalHeader({
   portalLabel,
@@ -45,6 +46,7 @@ export function PortalHeader({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <NotificationBell />
             <ChangePasswordButton />
             <button
               onClick={logout}
