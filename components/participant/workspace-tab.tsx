@@ -8,6 +8,7 @@ import { WeeklyTargets } from "@/components/weekly-targets";
 import { RejectedPanel } from "./rejected-panel";
 import { Phase1SubmissionPanel } from "./phase1-submission-panel";
 import { MeetingsPanel } from "@/components/mentorship/meetings-panel";
+import { TimelinePlanView } from "@/components/mentorship/timeline-plan-view";
 import { DiscussionBoard } from "./discussion-board";
 
 type Phase2Data = {
@@ -31,8 +32,6 @@ type Phase2Data = {
 };
 
 type Assignment = { assignment_role: string; staff_name: string };
-
-type TimelineEntry = { id: string; entry_date: string; work_description: string | null };
 
 export function WorkspaceTab({ teamId, status }: { teamId: string; status: string }) {
   // Phase 2 (pitch deck submission + review — Phase 1 itself is the external
@@ -893,22 +892,16 @@ function Phase4Panel({ teamId }: { teamId: string }) {
 function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [approvedFunding, setApprovedFunding] = useState<number | null>(null);
-  const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [locked, setLocked] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: assign }, { data: p2 }, { data: tl }, { data: team }] = await Promise.all([
+    const [{ data: assign }, { data: p2 }, { data: team }] = await Promise.all([
       supabase
         .from("project_assignments")
         .select("assignment_role, staff_profiles(full_name)")
         .eq("team_id", teamId),
       supabase.from("phase2_applications").select("amount_approved").eq("team_id", teamId).maybeSingle(),
-      supabase
-        .from("timeline_entries")
-        .select("id, entry_date, work_description")
-        .eq("team_id", teamId)
-        .order("entry_date", { ascending: true }),
       supabase.from("teams").select("timeline_locked").eq("id", teamId).single(),
     ]);
     setAssignments(
@@ -918,7 +911,6 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
       }))
     );
     setApprovedFunding(p2?.amount_approved ?? null);
-    setEntries(tl ?? []);
     setLocked(team?.timeline_locked ?? false);
   }, [teamId]);
 
@@ -928,13 +920,6 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
 
   const mentor = assignments.find((a) => a.assignment_role === "mentor");
   const ambassador = assignments.find((a) => a.assignment_role === "ambassador");
-
-  async function updateEntry(date: string, description: string) {
-    const supabase = createClient();
-    await supabase
-      .from("timeline_entries")
-      .upsert({ team_id: teamId, entry_date: date, work_description: description }, { onConflict: "team_id,entry_date" });
-  }
 
   return (
     <div className="space-y-4">
@@ -948,7 +933,7 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
           </h2>
           <p className="mt-1.5 max-w-2xl text-sm text-ink-light">
             Your funding has been approved and your mentor and ambassador are assigned below.
-            Use the daily timeline to log your progress as you build.
+            Download the timeline template, fill in your weekly plan, and upload it to get started.
           </p>
         </div>
       )}
@@ -976,81 +961,7 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
 
       <DiscussionBoard teamId={teamId} />
 
-      <div className="rounded-2xl border border-line bg-surface p-6">
-        <h3 className="font-display text-base font-semibold text-ink">Timeline</h3>
-        <p className="text-xs text-muted">Record your progress description for every day.</p>
-        <div className="mt-4 space-y-2">
-          {entries.length === 0 ? (
-            <p className="text-sm text-muted">No timeline entries yet.</p>
-          ) : (
-            entries.map((e) => (
-              <TimelineRow
-                key={e.entry_date}
-                date={e.entry_date}
-                description={e.work_description ?? ""}
-                locked={locked}
-                onSave={(desc) => updateEntry(e.entry_date, desc)}
-              />
-            ))
-          )}
-        </div>
-        {!locked && (
-          <button
-            onClick={async () => {
-              const date = new Date().toISOString().slice(0, 10);
-              if (entries.some((e) => e.entry_date === date)) return; // already logged today
-              const supabase = createClient();
-              const { data, error } = await supabase
-                .from("timeline_entries")
-                .upsert(
-                  { team_id: teamId, entry_date: date, work_description: "" },
-                  { onConflict: "team_id,entry_date", ignoreDuplicates: true }
-                )
-                .select("id, entry_date, work_description")
-                .maybeSingle();
-              if (error) {
-                console.error("Failed to log today's progress:", error);
-                return;
-              }
-              if (data) {
-                setEntries((prev) => [...prev, data]);
-              } else {
-                // Row already existed (e.g. from another tab) — just pull the latest state.
-                load();
-              }
-            }}
-            className="mt-3 text-xs font-medium text-marigold"
-          >
-            + Log today's progress
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TimelineRow({
-  date,
-  description,
-  locked,
-  onSave,
-}: {
-  date: string;
-  description: string;
-  locked: boolean;
-  onSave: (desc: string) => void;
-}) {
-  const [value, setValue] = useState(description);
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-line bg-paper px-3 py-2">
-      <span className="w-24 shrink-0 text-xs text-muted">{date}</span>
-      <input
-        value={value}
-        disabled={locked}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => onSave(value)}
-        className="flex-1 bg-transparent text-sm text-ink outline-none disabled:text-muted"
-      />
+      <TimelinePlanView teamId={teamId} readOnly={false} />
     </div>
   );
 }

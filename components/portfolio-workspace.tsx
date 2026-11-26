@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { WeeklyTargets } from "@/components/weekly-targets";
 import { MeetingsPanel } from "@/components/mentorship/meetings-panel";
+import { TimelinePlanView } from "@/components/mentorship/timeline-plan-view";
 
 type AssignedTeam = {
   id: string;
@@ -209,6 +210,10 @@ export function PortfolioWorkspace({
 
           <div className="mt-4">
             <MeetingsPanel teamId={selected.id} role={role} />
+          </div>
+
+          <div className="mt-4">
+            <TimelinePlanView teamId={selected.id} readOnly />
           </div>
 
           {/* Milestones */}
