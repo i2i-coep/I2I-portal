@@ -65,14 +65,16 @@ export function emailTemplate(type: string, payload: Payload): { subject: string
         subject: `🎉 ${payload.project_code} has been selected for Phase 3!`,
         body: `Congratulations! ${payload.team_name} (${payload.project_code}) has been selected for Phase 3 — Mentorship. Log in to the I2I portal to see your assigned mentor and ambassador, and start logging your daily progress.`,
       };
-    case "staff_account_created":
+    case "staff_account_created": {
       // Same plaintext-password tradeoff as registration_confirmed, for the
       // same reason — avoids depending on the recipient setting their own
       // password via a link before they can access the portal.
+      const portalParam = payload.role_label === "Mentor" ? "mentor" : "ambassador";
       return {
         subject: `Welcome to I2I — your ${payload.role_label} portal login`,
-        body: `Hi ${payload.full_name},\n\nYour I2I ${payload.role_label} account has been created.\n\nLogin email: ${payload.login_email}\nPassword: ${payload.login_password}\n\nLog in at: ${process.env.NEXT_PUBLIC_SITE_URL}/login?portal=ambassador\n\nWe recommend changing your password after your first login.`,
+        body: `Hi ${payload.full_name},\n\nYour I2I ${payload.role_label} account has been created.\n\nLogin email: ${payload.login_email}\nPassword: ${payload.login_password}\n\nLog in at: ${process.env.NEXT_PUBLIC_SITE_URL}/login?portal=${portalParam}\n\nWe recommend changing your password after your first login.`,
       };
+    }
     default:
       return { subject: "I2I Portal Update", body: "You have a new update on the I2I portal." };
   }

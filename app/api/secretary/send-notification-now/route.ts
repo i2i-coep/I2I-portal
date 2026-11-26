@@ -6,6 +6,7 @@ import { dispatchNotification } from "@/lib/notifications";
 const ROLE_LABELS: Record<string, string> = {
   ambassador: "Ambassador",
   chief_ambassador: "Chief Ambassador",
+  mentor: "Mentor",
 };
 
 // Same scheme as the Ambassador/Chief Ambassador bulk-import routes:

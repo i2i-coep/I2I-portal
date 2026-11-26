@@ -7,6 +7,8 @@ import { OtherDocumentsField, type OtherDocument } from "./other-documents-field
 import { WeeklyTargets } from "@/components/weekly-targets";
 import { RejectedPanel } from "./rejected-panel";
 import { Phase1SubmissionPanel } from "./phase1-submission-panel";
+import { MeetingsPanel } from "@/components/mentorship/meetings-panel";
+import { DiscussionBoard } from "./discussion-board";
 
 type Phase2Data = {
   id: string | null;
@@ -969,6 +971,10 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
       </div>
 
       <WeeklyTargets teamId={teamId} readOnly={false} locked={locked} />
+
+      <MeetingsPanel teamId={teamId} role="participant" />
+
+      <DiscussionBoard teamId={teamId} />
 
       <div className="rounded-2xl border border-line bg-surface p-6">
         <h3 className="font-display text-base font-semibold text-ink">Timeline</h3>
