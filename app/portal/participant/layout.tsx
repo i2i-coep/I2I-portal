@@ -29,9 +29,22 @@ export default async function ParticipantLayout({ children }: { children: React.
     .eq("phase_number", 3)
     .maybeSingle();
 
+  // phase_number 4 is "Phase 4 – Valedictory" — same independent switch,
+  // gates the sidebar's Phase 4 row becoming a real link.
+  const { data: phase4Settings } = await supabase
+    .from("phase_settings")
+    .select("is_open")
+    .eq("phase_number", 4)
+    .maybeSingle();
+
   return (
     <PageShell particles={false} theme="v0" scene3d className="flex min-h-screen flex-col sm:flex-row">
-      <ParticipantSidebar status={team.status} phase3Open={phase3Settings?.is_open ?? false} name={team.leader_name} />
+      <ParticipantSidebar
+        status={team.status}
+        phase3Open={phase3Settings?.is_open ?? false}
+        phase4Open={phase4Settings?.is_open ?? false}
+        name={team.leader_name}
+      />
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-10 sm:py-8">{children}</main>
     </PageShell>
   );

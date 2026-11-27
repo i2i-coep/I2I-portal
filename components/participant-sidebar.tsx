@@ -96,10 +96,23 @@ function TrackerSubRow({ n, label, done, active }: PhaseRow) {
   );
 }
 
-function GatesTracker({ status, phase3Open, pathname, onNavigate }: { status: string; phase3Open: boolean; pathname: string; onNavigate?: () => void }) {
+function GatesTracker({
+  status,
+  phase3Open,
+  phase4Open,
+  pathname,
+  onNavigate,
+}: {
+  status: string;
+  phase3Open: boolean;
+  phase4Open: boolean;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   const { top, sub30, sub31, top3 } = buildPhases(status);
   const inPhase3Plus = ["shortlisted_phase3", "funded", "completed"].includes(status);
   const phase3Unlocked = inPhase3Plus && phase3Open;
+  const phase4Unlocked = inPhase3Plus && phase4Open;
 
   return (
     <div className="space-y-1.5">
@@ -137,7 +150,13 @@ function GatesTracker({ status, phase3Open, pathname, onNavigate }: { status: st
         </div>
       </div>
 
-      <TrackerRow {...top[2]} />
+      {phase4Unlocked ? (
+        <Link href="/portal/participant/phase-4" onClick={onNavigate}>
+          <TrackerRow {...top[2]} />
+        </Link>
+      ) : (
+        <TrackerRow {...top[2]} />
+      )}
     </div>
   );
 }
@@ -145,6 +164,7 @@ function GatesTracker({ status, phase3Open, pathname, onNavigate }: { status: st
 function SidebarContent({
   status,
   phase3Open,
+  phase4Open,
   pathname,
   name,
   onLogout,
@@ -152,6 +172,7 @@ function SidebarContent({
 }: {
   status: string;
   phase3Open: boolean;
+  phase4Open: boolean;
   pathname: string;
   name: string;
   onLogout: () => void;
@@ -179,7 +200,7 @@ function SidebarContent({
 
       <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted">i2i Gates Tracker</p>
       <div className="mb-6">
-        <GatesTracker status={status} phase3Open={phase3Open} pathname={pathname} onNavigate={onNavigate} />
+        <GatesTracker status={status} phase3Open={phase3Open} phase4Open={phase4Open} pathname={pathname} onNavigate={onNavigate} />
       </div>
 
       <div className="mt-auto border-t border-line pt-4">
@@ -200,10 +221,12 @@ function SidebarContent({
 export function ParticipantSidebar({
   status,
   phase3Open,
+  phase4Open,
   name,
 }: {
   status: string;
   phase3Open: boolean;
+  phase4Open: boolean;
   name: string;
 }) {
   const router = useRouter();
@@ -220,7 +243,14 @@ export function ParticipantSidebar({
     <>
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 sm:flex">
-        <SidebarContent status={status} phase3Open={phase3Open} pathname={pathname} name={name} onLogout={logout} />
+        <SidebarContent
+          status={status}
+          phase3Open={phase3Open}
+          phase4Open={phase4Open}
+          pathname={pathname}
+          name={name}
+          onLogout={logout}
+        />
       </aside>
 
       {/* Mobile top bar */}
@@ -269,6 +299,7 @@ export function ParticipantSidebar({
               <SidebarContent
                 status={status}
                 phase3Open={phase3Open}
+                phase4Open={phase4Open}
                 pathname={pathname}
                 name={name}
                 onLogout={logout}
