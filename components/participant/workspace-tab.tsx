@@ -899,10 +899,11 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [leaderName, setLeaderName] = useState("");
   const [activeTab, setActiveTab] = useState<Phase3Tab>("Dashboard");
+  const [phase3Open, setPhase3Open] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: assign }, { data: p2 }, { data: team }, { data: userRes }] = await Promise.all([
+    const [{ data: assign }, { data: p2 }, { data: team }, { data: userRes }, { data: phase3Settings }] = await Promise.all([
       supabase
         .from("project_assignments")
         .select("assignment_role, staff_profiles(full_name, email, phone)")
@@ -910,7 +911,14 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
       supabase.from("phase2_applications").select("amount_approved").eq("team_id", teamId).maybeSingle(),
       supabase.from("teams").select("timeline_locked, leader_name").eq("id", teamId).single(),
       supabase.auth.getUser(),
+      // phase_number 3 is internally "Phase 3.1 – Mentorship" (see
+      // DISPLAY_LABEL in components/secretary/phase-engine-panel.tsx) — the
+      // Secretary opens this from the Phase Engine when mentorship actually
+      // begins. Until then, this panel stays blocked even for a team whose
+      // own status already reached shortlisted_phase3.
+      supabase.from("phase_settings").select("is_open").eq("phase_number", 3).maybeSingle(),
     ]);
+    setPhase3Open(phase3Settings?.is_open ?? false);
     setAssignments(
       (assign ?? []).map((a) => {
         const staff = a.staff_profiles as unknown as { full_name: string; email: string; phone: string | null } | null;
@@ -934,6 +942,18 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
 
   const mentor = assignments.find((a) => a.assignment_role === "mentor");
   const ambassador = assignments.find((a) => a.assignment_role === "ambassador");
+
+  if (phase3Open === false) {
+    return (
+      <div className="rounded-2xl border border-dashed border-line bg-surface px-6 py-12 text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 3</p>
+        <h2 className="mt-2 font-display text-lg font-semibold text-ink">Mentorship hasn&apos;t started yet</h2>
+        <p className="mt-2 text-sm text-muted">
+          The Secretary will open this section once Phase 3 begins. Check back soon.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
