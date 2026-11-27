@@ -4,12 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { FileUploadField } from "./file-upload-field";
 import { OtherDocumentsField, type OtherDocument } from "./other-documents-field";
-import { WeeklyTargets } from "@/components/weekly-targets";
 import { RejectedPanel } from "./rejected-panel";
 import { Phase1SubmissionPanel } from "./phase1-submission-panel";
-import { MeetingsPanel } from "@/components/mentorship/meetings-panel";
-import { TimelinePlanView } from "@/components/mentorship/timeline-plan-view";
-import { TeamChat } from "@/components/chat/team-chat";
 
 type Phase2Data = {
   id: string | null;
@@ -31,127 +27,19 @@ type Phase2Data = {
   amount_approved: number | null;
 };
 
-type Assignment = { assignment_role: string; staff_name: string; staff_email: string; staff_phone: string | null };
-
 export function WorkspaceTab({ teamId, status }: { teamId: string; status: string }) {
-  // Phase 2 (pitch deck submission + review — Phase 1 itself is the external
-  // Google Form registration, already complete for every account that
-  // exists, so it's shown as a permanently-done formality, not a live step)
-  // isn't "done" until a decision has actually been made — before that,
-  // it's the active step, not a permanently-checked one.
-  const phase2Decided = status !== "registered" && status !== "under_review";
-  type PhaseRow = { n: string; label: string; done: boolean; active: boolean; sub?: PhaseRow[] };
-  const phases: PhaseRow[] = [
-    { n: "1", label: "Phase 1 - Registration", done: true, active: false },
-    { n: "2", label: "Phase 2 - Pitch Deck Submission", done: phase2Decided, active: !phase2Decided },
-    {
-      n: "3",
-      label: "Phase 3",
-      done: ["funded", "completed"].includes(status),
-      active: ["shortlisted_phase2", "shortlisted_phase3"].includes(status),
-      // Not two separate phases, and not one undivided step either — two
-      // distinct pages/workflows (proposal+funding docs, then mentorship)
-      // within the same Phase 3, shown as sub-steps.
-      sub: [
-        {
-          n: "3.0",
-          label: "Proposal & Funding",
-          done: ["shortlisted_phase3", "funded", "completed"].includes(status),
-          active: status === "shortlisted_phase2",
-        },
-        {
-          n: "3.1",
-          label: "Mentorship",
-          done: ["funded", "completed"].includes(status),
-          active: status === "shortlisted_phase3",
-        },
-      ],
-    },
-    { n: "4", label: "Phase 4 - Valedictory", done: status === "completed", active: status === "funded" },
-  ];
-
   const inPhase2 = status === "shortlisted_phase2";
-  const inPhase3Plus = ["shortlisted_phase3", "funded", "completed"].includes(status);
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-      <div className="rounded-2xl border border-line bg-surface p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          i2i Gates Tracker
-        </p>
-        <div className="mt-3 space-y-1.5">
-          {phases.map((p) => (
-            <div key={p.n}>
-              <div
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                  p.done
-                    ? "bg-marigold/15 text-marigold"
-                    : p.active
-                      ? "bg-marigold/5 text-ink ring-1 ring-inset ring-marigold/50"
-                      : "text-muted"
-                }`}
-              >
-                <span
-                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-                    p.done
-                      ? "bg-marigold text-ink"
-                      : p.active
-                        ? "border-2 border-marigold text-marigold"
-                        : "border border-line"
-                  }`}
-                >
-                  {p.done ? "✓" : p.n}
-                </span>
-                {p.label}
-              </div>
-              {p.sub && (
-                <div className="ml-4 mt-1 space-y-1 border-l border-line pl-3">
-                  {p.sub.map((s) => (
-                    <div
-                      key={s.n}
-                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
-                        s.done
-                          ? "text-marigold"
-                          : s.active
-                            ? "text-ink"
-                            : "text-muted"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-                          s.done
-                            ? "bg-marigold text-ink"
-                            : s.active
-                              ? "border-2 border-marigold text-marigold"
-                              : "border border-line"
-                        }`}
-                      >
-                        {s.done ? "✓" : s.n}
-                      </span>
-                      {s.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {inPhase2 ? (
-        <Phase2Panel teamId={teamId} />
-      ) : inPhase3Plus ? (
-        <div className="space-y-4">
-          <Phase3Panel teamId={teamId} status={status} />
-          {inPhase3Plus && <Phase4Panel teamId={teamId} />}
-        </div>
-      ) : status === "rejected" ? (
-        <RejectedPanel teamId={teamId} />
-      ) : (
-        <Phase1SubmissionPanel teamId={teamId} />
-      )}
-    </div>
-  );
+  // The i2i Gates Tracker that used to render here (260px wide, competing
+  // with this content for space on every phase) now lives in the portal's
+  // left sidebar (components/participant-sidebar.tsx) instead. Once a team
+  // reaches Phase 3 (shortlisted_phase3/funded/completed), the root
+  // page redirects to /portal/participant/phase-3 — real nested pages,
+  // same as Mentor/Ambassador — so this component never needs to render
+  // that content itself.
+  if (inPhase2) return <Phase2Panel teamId={teamId} />;
+  if (status === "rejected") return <RejectedPanel teamId={teamId} />;
+  return <Phase1SubmissionPanel teamId={teamId} />;
 }
 
 const EMPTY_PHASE2: Phase2Data = {
@@ -174,7 +62,7 @@ const EMPTY_PHASE2: Phase2Data = {
   amount_approved: null,
 };
 
-function Phase2Panel({ teamId }: { teamId: string }) {
+export function Phase2Panel({ teamId }: { teamId: string }) {
   const [data, setData] = useState<Phase2Data | null>(null);
   const [subTab, setSubTab] = useState<"pitch" | "bills" | "passbook" | "mentor" | "review">("pitch");
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -756,7 +644,7 @@ function ReviewPanel({
   );
 }
 
-function Phase4Panel({ teamId }: { teamId: string }) {
+export function Phase4Panel({ teamId }: { teamId: string }) {
   const [reportUrl, setReportUrl] = useState("");
   const [pptUrl, setPptUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -883,188 +771,6 @@ function Phase4Panel({ teamId }: { teamId: string }) {
           {juryScore != null && (
             <span className="font-display font-semibold text-marigold">{juryScore}/100</span>
           )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const PHASE3_TABS = ["Dashboard", "My Team", "Meets", "Chat"] as const;
-type Phase3Tab = (typeof PHASE3_TABS)[number];
-
-function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [approvedFunding, setApprovedFunding] = useState<number | null>(null);
-  const [locked, setLocked] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [leaderName, setLeaderName] = useState("");
-  const [activeTab, setActiveTab] = useState<Phase3Tab>("Dashboard");
-  const [phase3Open, setPhase3Open] = useState<boolean | null>(null);
-
-  const load = useCallback(async () => {
-    const supabase = createClient();
-    const [{ data: assign }, { data: p2 }, { data: team }, { data: userRes }, { data: phase3Settings }] = await Promise.all([
-      supabase
-        .from("project_assignments")
-        .select("assignment_role, staff_profiles(full_name, email, phone)")
-        .eq("team_id", teamId),
-      supabase.from("phase2_applications").select("amount_approved").eq("team_id", teamId).maybeSingle(),
-      supabase.from("teams").select("timeline_locked, leader_name").eq("id", teamId).single(),
-      supabase.auth.getUser(),
-      // phase_number 3 is internally "Phase 3.1 – Mentorship" (see
-      // DISPLAY_LABEL in components/secretary/phase-engine-panel.tsx) — the
-      // Secretary opens this from the Phase Engine when mentorship actually
-      // begins. Until then, this panel stays blocked even for a team whose
-      // own status already reached shortlisted_phase3.
-      supabase.from("phase_settings").select("is_open").eq("phase_number", 3).maybeSingle(),
-    ]);
-    setPhase3Open(phase3Settings?.is_open ?? false);
-    setAssignments(
-      (assign ?? []).map((a) => {
-        const staff = a.staff_profiles as unknown as { full_name: string; email: string; phone: string | null } | null;
-        return {
-          assignment_role: a.assignment_role,
-          staff_name: staff?.full_name ?? "—",
-          staff_email: staff?.email ?? "—",
-          staff_phone: staff?.phone ?? null,
-        };
-      })
-    );
-    setApprovedFunding(p2?.amount_approved ?? null);
-    setLocked(team?.timeline_locked ?? false);
-    setLeaderName(team?.leader_name ?? "");
-    setCurrentUserId(userRes?.user?.id ?? null);
-  }, [teamId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const mentor = assignments.find((a) => a.assignment_role === "mentor");
-  const ambassador = assignments.find((a) => a.assignment_role === "ambassador");
-
-  if (phase3Open === false) {
-    return (
-      <div className="rounded-2xl border border-dashed border-line bg-surface px-6 py-12 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-marigold">Phase 3</p>
-        <h2 className="mt-2 font-display text-lg font-semibold text-ink">Mentorship hasn&apos;t started yet</h2>
-        <p className="mt-2 text-sm text-muted">
-          The Secretary will open this section once Phase 3 begins. Check back soon.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      {status === "shortlisted_phase3" && (
-        <div className="rounded-2xl border border-marigold/30 bg-marigold/10 p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-marigold">
-            🎉 Congratulations
-          </p>
-          <h2 className="mt-1 font-display text-lg font-semibold text-ink">
-            Your project has moved into Phase 3.1 — Mentorship!
-          </h2>
-          <p className="mt-1.5 max-w-2xl text-sm text-ink-light">
-            Your funding has been approved and your mentor and ambassador are assigned below.
-            Download the timeline template, fill in your weekly plan, and upload it to get started.
-          </p>
-        </div>
-      )}
-
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-surface p-1">
-        {PHASE3_TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`shrink-0 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-              activeTab === tab ? "bg-marigold text-ink" : "text-ink-light hover:bg-paper"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "Dashboard" && (
-        <div className="space-y-4">
-          <div className="grid gap-4 rounded-2xl border border-line bg-surface p-6 sm:grid-cols-3">
-            <div>
-              <p className="text-xs uppercase text-muted">Approved Funding</p>
-              <p className="mt-1 font-display text-lg font-bold text-marigold">
-                {approvedFunding != null ? `₹${approvedFunding}` : "Pending"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-muted">Assigned Mentor</p>
-              <p className="mt-1 text-sm font-medium text-ink">{mentor?.staff_name ?? "Not yet assigned"}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-muted">Assigned Ambassador</p>
-              <p className="mt-1 text-sm font-medium text-ink">{ambassador?.staff_name ?? "Not yet assigned"}</p>
-            </div>
-          </div>
-          <WeeklyTargets teamId={teamId} readOnly={false} locked={locked} />
-        </div>
-      )}
-
-      {activeTab === "My Team" && (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-line bg-surface p-6">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-marigold">Assigned Mentor</p>
-            {mentor ? (
-              <table className="w-full border-collapse">
-                <tbody>
-                  <tr className="border-b border-line">
-                    <td className="w-32 py-1.5 text-xs font-semibold uppercase text-muted">Name</td>
-                    <td className="py-1.5 text-sm text-ink">{mentor.staff_name}</td>
-                  </tr>
-                  <tr className="border-b border-line">
-                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Email</td>
-                    <td className="py-1.5 text-sm text-ink">{mentor.staff_email}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Phone</td>
-                    <td className="py-1.5 text-sm text-ink">{mentor.staff_phone ?? "—"}</td>
-                  </tr>
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-sm text-muted">Not yet assigned.</p>
-            )}
-
-            <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-widest text-sky-400">Assigned Ambassador</p>
-            {ambassador ? (
-              <table className="w-full border-collapse">
-                <tbody>
-                  <tr className="border-b border-line">
-                    <td className="w-32 py-1.5 text-xs font-semibold uppercase text-muted">Name</td>
-                    <td className="py-1.5 text-sm text-ink">{ambassador.staff_name}</td>
-                  </tr>
-                  <tr className="border-b border-line">
-                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Email</td>
-                    <td className="py-1.5 text-sm text-ink">{ambassador.staff_email}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Phone</td>
-                    <td className="py-1.5 text-sm text-ink">{ambassador.staff_phone ?? "—"}</td>
-                  </tr>
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-sm text-muted">Not yet assigned.</p>
-            )}
-          </div>
-
-          <TimelinePlanView teamId={teamId} readOnly={false} />
-        </div>
-      )}
-
-      {activeTab === "Meets" && <MeetingsPanel teamId={teamId} role="participant" />}
-
-      {activeTab === "Chat" && currentUserId && (
-        <div className="h-[560px]">
-          <TeamChat teamId={teamId} currentUserId={currentUserId} currentUserName={leaderName} role="participant" />
         </div>
       )}
     </div>
