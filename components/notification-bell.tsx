@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useId } from "react";
+import { useState, useEffect, useCallback, useId, useRef } from "react";
 import { Bell } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -23,6 +23,8 @@ export function NotificationBell() {
   // instance's subscribe() collide with the first's and throw. A unique
   // name per mounted instance avoids the collision.
   const instanceId = useId();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -55,13 +57,32 @@ export function NotificationBell() {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   }
 
+  const PANEL_WIDTH = 320;
+
+  function toggleOpen() {
+    if (!open && buttonRef.current) {
+      // Position the panel relative to the *viewport*, not the narrow
+      // sidebar column it sits in — the sidebar (desktop: 256px) is
+      // narrower than the panel (320px), so anchoring it `absolute right-0`
+      // inside that column pushed it off-screen to the left. Compute
+      // coordinates from the button's own position instead, clamped so it
+      // always stays within the viewport.
+      const rect = buttonRef.current.getBoundingClientRect();
+      const left = Math.min(
+        Math.max(16, rect.right - PANEL_WIDTH),
+        window.innerWidth - PANEL_WIDTH - 16
+      );
+      setPanelPos({ top: rect.bottom + 8, left });
+    }
+    setOpen((o) => !o);
+    if (!open) markAllRead();
+  }
+
   return (
     <div className="relative">
       <button
-        onClick={() => {
-          setOpen((o) => !o);
-          if (!open) markAllRead();
-        }}
+        ref={buttonRef}
+        onClick={toggleOpen}
         aria-label="Notifications"
         className="relative rounded-lg border border-line p-2 text-ink-light hover:border-marigold/50 hover:text-marigold"
       >
@@ -74,14 +95,15 @@ export function NotificationBell() {
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && panelPos && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="absolute right-0 z-50 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-xl"
+              style={{ top: panelPos.top, left: panelPos.left, width: PANEL_WIDTH }}
+              className="fixed z-50 max-h-96 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-xl"
             >
               {notifications.length === 0 ? (
                 <p className="px-3 py-6 text-center text-xs text-muted">No notifications yet.</p>
