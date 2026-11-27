@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId } from "react";
 import { Bell } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,12 @@ type Notification = {
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  // Every sidebar renders two of these at once (desktop + mobile top bar,
+  // both mounted simultaneously — only CSS-hidden at different
+  // breakpoints), so a shared hardcoded channel name made the second
+  // instance's subscribe() collide with the first's and throw. A unique
+  // name per mounted instance avoids the collision.
+  const instanceId = useId();
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -32,13 +38,13 @@ export function NotificationBell() {
     load();
     const supabase = createClient();
     const channel = supabase
-      .channel("in_app_notifications_changes")
+      .channel(`in_app_notifications_changes_${instanceId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "in_app_notifications" }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [load]);
+  }, [load, instanceId]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
