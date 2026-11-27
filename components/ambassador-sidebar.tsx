@@ -22,12 +22,14 @@ function NavLinks({
   pathname,
   name,
   roleLabel,
+  phase3Open,
   onLogout,
   onNavigate,
 }: {
   pathname: string;
   name: string;
   roleLabel: string;
+  phase3Open: boolean;
   onLogout: () => void;
   onNavigate?: () => void;
 }) {
@@ -62,19 +64,26 @@ function NavLinks({
             3
           </span>
           Phase 3 – Mentorship
+          {!phase3Open && <span className="text-[10px] font-normal normal-case text-muted">(opens soon)</span>}
         </p>
-        {PHASE3_SUBNAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={`ml-4 block rounded-lg border-l border-line py-1.5 pl-3 text-xs font-medium transition ${
-              pathname === item.href ? "border-marigold text-marigold" : "text-ink-light hover:text-ink"
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {phase3Open ? (
+          PHASE3_SUBNAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              className={`ml-4 block rounded-lg border-l border-line py-1.5 pl-3 text-xs font-medium transition ${
+                pathname === item.href ? "border-marigold text-marigold" : "text-ink-light hover:text-ink"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))
+        ) : (
+          <p className="ml-4 border-l border-line py-1.5 pl-3 text-xs text-muted">
+            Not open yet — the Secretary turns this on from the Phase Engine.
+          </p>
+        )}
         <Link
           href="/portal/ambassador/your-projects"
           onClick={onNavigate}
@@ -103,7 +112,15 @@ function NavLinks({
   );
 }
 
-export function AmbassadorSidebar({ name, roleLabel }: { name: string; roleLabel: string }) {
+export function AmbassadorSidebar({
+  name,
+  roleLabel,
+  phase3Open,
+}: {
+  name: string;
+  roleLabel: string;
+  phase3Open: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -118,7 +135,7 @@ export function AmbassadorSidebar({ name, roleLabel }: { name: string; roleLabel
     <>
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-6 sm:flex">
-        <NavLinks pathname={pathname} name={name} roleLabel={roleLabel} onLogout={logout} />
+        <NavLinks pathname={pathname} name={name} roleLabel={roleLabel} phase3Open={phase3Open} onLogout={logout} />
       </aside>
 
       {/* Mobile top bar */}
@@ -168,6 +185,7 @@ export function AmbassadorSidebar({ name, roleLabel }: { name: string; roleLabel
                 pathname={pathname}
                 name={name}
                 roleLabel={roleLabel}
+                phase3Open={phase3Open}
                 onLogout={logout}
                 onNavigate={() => setOpen(false)}
               />
