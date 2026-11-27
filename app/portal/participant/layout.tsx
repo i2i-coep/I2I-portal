@@ -19,9 +19,19 @@ export default async function ParticipantLayout({ children }: { children: React.
 
   if (!team) redirect("/dashboard");
 
+  // phase_number 3 is internally "Phase 3.1 – Mentorship" (see
+  // DISPLAY_LABEL in components/secretary/phase-engine-panel.tsx) — gates
+  // whether the sidebar's 3.1 sub-nav (Dashboard/My Team/Meets/Chat)
+  // becomes real links, same switch the Mentor/Ambassador side uses.
+  const { data: phase3Settings } = await supabase
+    .from("phase_settings")
+    .select("is_open")
+    .eq("phase_number", 3)
+    .maybeSingle();
+
   return (
     <PageShell particles={false} theme="v0" scene3d className="flex min-h-screen flex-col sm:flex-row">
-      <ParticipantSidebar status={team.status} name={team.leader_name} />
+      <ParticipantSidebar status={team.status} phase3Open={phase3Settings?.is_open ?? false} name={team.leader_name} />
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-10 sm:py-8">{children}</main>
     </PageShell>
   );
