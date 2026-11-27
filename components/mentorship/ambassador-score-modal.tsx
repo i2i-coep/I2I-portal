@@ -4,16 +4,15 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 
-// PLACEHOLDER LABELS — the Secretary is sending the real 5 Ambassador
-// scoring criteria separately (fixed every meet, per last year's reference
-// sheet — unlike the mentor's, which change per meet). Swap the `label`
-// strings below once given.
+// Real 5 Ambassador criteria, fixed every meet — from last year's reference
+// sheet (INN202507.xlsx, "Grading parameters" tab, "Grading Sheet for
+// Ambassador" block), unlike the mentor's, which change per meet.
 export const AMBASSADOR_SCORE_CRITERIA = [
-  { key: "ambassador_score_criterion_1", label: "Criterion 1 (placeholder)" },
-  { key: "ambassador_score_criterion_2", label: "Criterion 2 (placeholder)" },
-  { key: "ambassador_score_criterion_3", label: "Criterion 3 (placeholder)" },
-  { key: "ambassador_score_criterion_4", label: "Criterion 4 (placeholder)" },
-  { key: "ambassador_score_criterion_5", label: "Criterion 5 (placeholder)" },
+  { key: "ambassador_score_criterion_1", label: "Punctuality in Joining Meetings" },
+  { key: "ambassador_score_criterion_2", label: "Active Participation in Meetings" },
+  { key: "ambassador_score_criterion_3", label: "Equal Contribution During Discussions" },
+  { key: "ambassador_score_criterion_4", label: "Adherence to Mentor Instructions & Inputs" },
+  { key: "ambassador_score_criterion_5", label: "Meeting Discipline & Professional Conduct" },
 ] as const;
 
 type CriterionKey = (typeof AMBASSADOR_SCORE_CRITERIA)[number]["key"];
