@@ -15,6 +15,7 @@ const PHASE3_SUBNAV = [
   { href: "/portal/ambassador/phase-3", label: "Dashboard" },
   { href: "/portal/ambassador/phase-3/my-teams", label: "My Teams" },
   { href: "/portal/ambassador/phase-3/meets", label: "Meets" },
+  { href: "/portal/ambassador/phase-3/scores", label: "Score Records" },
   { href: "/portal/ambassador/phase-3/chat", label: "Chat" },
 ];
 

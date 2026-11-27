@@ -298,7 +298,7 @@ export function MeetingsPanel({
                           Score Meeting
                         </button>
                       )}
-                      {m.mentor_score != null && (
+                      {role !== "participant" && m.mentor_score != null && (
                         <span className="text-xs font-semibold text-marigold" title="Mentor score">
                           M: {m.mentor_score}/10
                         </span>
@@ -311,7 +311,7 @@ export function MeetingsPanel({
                           Score Meeting
                         </button>
                       )}
-                      {m.ambassador_score != null && (
+                      {role !== "participant" && m.ambassador_score != null && (
                         <span className="text-xs font-semibold text-marigold" title="Ambassador score">
                           A: {m.ambassador_score}/10
                         </span>

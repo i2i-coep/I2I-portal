@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LayoutDashboard, Users, CalendarClock, MessageSquare } from "lucide-react";
+import { Menu, X, LayoutDashboard, Users, CalendarClock, MessageSquare, ClipboardList } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { HelpWidget } from "./help-widget";
 import { ChangePasswordButton } from "./change-password-modal";
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/portal/mentor", label: "Dashboard", icon: LayoutDashboard },
   { href: "/portal/mentor/my-teams", label: "My Teams", icon: Users },
   { href: "/portal/mentor/meets", label: "Meets", icon: CalendarClock },
+  { href: "/portal/mentor/scores", label: "Score Records", icon: ClipboardList },
   { href: "/portal/mentor/chat", label: "Chat", icon: MessageSquare },
 ];
 
