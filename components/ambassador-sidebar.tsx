@@ -11,6 +11,13 @@ import { HelpWidget } from "./help-widget";
 import { ChangePasswordButton } from "./change-password-modal";
 import { NotificationBell } from "./notification-bell";
 
+const PHASE3_SUBNAV = [
+  { href: "/portal/ambassador/phase-3", label: "Dashboard" },
+  { href: "/portal/ambassador/phase-3/my-teams", label: "My Teams" },
+  { href: "/portal/ambassador/phase-3/meets", label: "Meets" },
+  { href: "/portal/ambassador/phase-3/chat", label: "Chat" },
+];
+
 function NavLinks({
   pathname,
   name,
@@ -50,18 +57,24 @@ function NavLinks({
           </span>
           Phase 2 – Pitch Deck Review
         </Link>
-        <Link
-          href="/portal/ambassador/phase-3"
-          onClick={onNavigate}
-          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-            pathname === "/portal/ambassador/phase-3" ? "bg-marigold/15 text-marigold" : "text-ink-light hover:bg-paper"
-          }`}
-        >
+        <p className="mb-1 mt-2 flex items-center gap-2.5 px-3 text-sm font-medium text-ink-light">
           <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-current px-1 text-[10px]">
             3
           </span>
           Phase 3 – Mentorship
-        </Link>
+        </p>
+        {PHASE3_SUBNAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            className={`ml-4 block rounded-lg border-l border-line py-1.5 pl-3 text-xs font-medium transition ${
+              pathname === item.href ? "border-marigold text-marigold" : "text-ink-light hover:text-ink"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
         <Link
           href="/portal/ambassador/your-projects"
           onClick={onNavigate}
