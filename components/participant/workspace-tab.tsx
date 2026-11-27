@@ -34,124 +34,24 @@ type Phase2Data = {
 type Assignment = { assignment_role: string; staff_name: string; staff_email: string; staff_phone: string | null };
 
 export function WorkspaceTab({ teamId, status }: { teamId: string; status: string }) {
-  // Phase 2 (pitch deck submission + review — Phase 1 itself is the external
-  // Google Form registration, already complete for every account that
-  // exists, so it's shown as a permanently-done formality, not a live step)
-  // isn't "done" until a decision has actually been made — before that,
-  // it's the active step, not a permanently-checked one.
-  const phase2Decided = status !== "registered" && status !== "under_review";
-  type PhaseRow = { n: string; label: string; done: boolean; active: boolean; sub?: PhaseRow[] };
-  const phases: PhaseRow[] = [
-    { n: "1", label: "Phase 1 - Registration", done: true, active: false },
-    { n: "2", label: "Phase 2 - Pitch Deck Submission", done: phase2Decided, active: !phase2Decided },
-    {
-      n: "3",
-      label: "Phase 3",
-      done: ["funded", "completed"].includes(status),
-      active: ["shortlisted_phase2", "shortlisted_phase3"].includes(status),
-      // Not two separate phases, and not one undivided step either — two
-      // distinct pages/workflows (proposal+funding docs, then mentorship)
-      // within the same Phase 3, shown as sub-steps.
-      sub: [
-        {
-          n: "3.0",
-          label: "Proposal & Funding",
-          done: ["shortlisted_phase3", "funded", "completed"].includes(status),
-          active: status === "shortlisted_phase2",
-        },
-        {
-          n: "3.1",
-          label: "Mentorship",
-          done: ["funded", "completed"].includes(status),
-          active: status === "shortlisted_phase3",
-        },
-      ],
-    },
-    { n: "4", label: "Phase 4 - Valedictory", done: status === "completed", active: status === "funded" },
-  ];
-
   const inPhase2 = status === "shortlisted_phase2";
   const inPhase3Plus = ["shortlisted_phase3", "funded", "completed"].includes(status);
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-      <div className="rounded-2xl border border-line bg-surface p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          i2i Gates Tracker
-        </p>
-        <div className="mt-3 space-y-1.5">
-          {phases.map((p) => (
-            <div key={p.n}>
-              <div
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                  p.done
-                    ? "bg-marigold/15 text-marigold"
-                    : p.active
-                      ? "bg-marigold/5 text-ink ring-1 ring-inset ring-marigold/50"
-                      : "text-muted"
-                }`}
-              >
-                <span
-                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-                    p.done
-                      ? "bg-marigold text-ink"
-                      : p.active
-                        ? "border-2 border-marigold text-marigold"
-                        : "border border-line"
-                  }`}
-                >
-                  {p.done ? "✓" : p.n}
-                </span>
-                {p.label}
-              </div>
-              {p.sub && (
-                <div className="ml-4 mt-1 space-y-1 border-l border-line pl-3">
-                  {p.sub.map((s) => (
-                    <div
-                      key={s.n}
-                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
-                        s.done
-                          ? "text-marigold"
-                          : s.active
-                            ? "text-ink"
-                            : "text-muted"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-                          s.done
-                            ? "bg-marigold text-ink"
-                            : s.active
-                              ? "border-2 border-marigold text-marigold"
-                              : "border border-line"
-                        }`}
-                      >
-                        {s.done ? "✓" : s.n}
-                      </span>
-                      {s.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+  // The i2i Gates Tracker that used to render here (260px wide, competing
+  // with this content for space on every phase) now lives in the portal's
+  // left sidebar (components/participant-sidebar.tsx) instead — this is
+  // just the full-width content for whichever phase applies.
+  if (inPhase2) return <Phase2Panel teamId={teamId} />;
+  if (inPhase3Plus) {
+    return (
+      <div className="space-y-4">
+        <Phase3Panel teamId={teamId} status={status} />
+        <Phase4Panel teamId={teamId} />
       </div>
-
-      {inPhase2 ? (
-        <Phase2Panel teamId={teamId} />
-      ) : inPhase3Plus ? (
-        <div className="space-y-4">
-          <Phase3Panel teamId={teamId} status={status} />
-          {inPhase3Plus && <Phase4Panel teamId={teamId} />}
-        </div>
-      ) : status === "rejected" ? (
-        <RejectedPanel teamId={teamId} />
-      ) : (
-        <Phase1SubmissionPanel teamId={teamId} />
-      )}
-    </div>
-  );
+    );
+  }
+  if (status === "rejected") return <RejectedPanel teamId={teamId} />;
+  return <Phase1SubmissionPanel teamId={teamId} />;
 }
 
 const EMPTY_PHASE2: Phase2Data = {

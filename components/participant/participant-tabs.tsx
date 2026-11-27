@@ -32,7 +32,7 @@ export function ParticipantTabs({ team, editRequest }: { team: TeamData; editReq
   const [tab, setTab] = useState<"workspace" | "team_info">("workspace");
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-5xl">
       <div className="mb-6 inline-flex rounded-lg border border-line bg-surface p-1">
         <button
           onClick={() => setTab("workspace")}
