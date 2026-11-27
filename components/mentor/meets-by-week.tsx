@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ChevronDown } from "lucide-react";
 import { MeetingScoreModal } from "@/components/mentorship/meeting-score-modal";
 import { MEETING_TYPES, getCriteriaForMeetingType } from "@/lib/mentorship/meeting-criteria";
+import { formatWeekRange, getCurrentWeekNumber } from "@/lib/mentorship/week-dates";
 import type { MentorTeam } from "@/lib/mentor/teams";
 
 type Meeting = {
@@ -30,8 +31,10 @@ function formatWhen(date: string, time: string | null) {
     : d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 
-function WeekCard({ weekNumber, meeting, onConfirmed, onScored }: {
+function WeekCard({ weekNumber, dateRange, isCurrentWeek, meeting, onConfirmed, onScored }: {
   weekNumber: number;
+  dateRange: string | null;
+  isCurrentWeek: boolean;
   meeting: Meeting | undefined;
   onConfirmed: () => void;
   onScored: () => void;
@@ -51,20 +54,27 @@ function WeekCard({ weekNumber, meeting, onConfirmed, onScored }: {
   }
 
   return (
-    <div className="rounded-xl border border-line bg-surface">
+    <div className={`rounded-xl border bg-surface ${isCurrentWeek ? "border-marigold/50" : "border-line"}`}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-4 py-3 text-left"
       >
         <div className="flex items-center gap-3">
+          {isCurrentWeek && (
+            <span className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" title="Current week" />
+          )}
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-line text-xs font-semibold text-ink-light">
             {weekNumber}
           </span>
           <span className="text-sm font-semibold text-ink">Week {weekNumber}</span>
-          {meeting ? (
-            <span className="text-xs text-muted">{formatWhen(meeting.meeting_date, meeting.meeting_time)}</span>
-          ) : (
-            <span className="text-xs text-muted">Not scheduled yet</span>
+          {dateRange && <span className="text-xs text-muted">{dateRange}</span>}
+          {isCurrentWeek && (
+            <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-semibold text-green-400">
+              Current Week
+            </span>
+          )}
+          {meeting && (
+            <span className="text-xs text-muted">· {formatWhen(meeting.meeting_date, meeting.meeting_time)}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -141,7 +151,13 @@ function WeekCard({ weekNumber, meeting, onConfirmed, onScored }: {
   );
 }
 
-export function MentorMeetsByWeek({ teams }: { teams: MentorTeam[] }) {
+export function MentorMeetsByWeek({
+  teams,
+  mentorshipStartsAt,
+}: {
+  teams: MentorTeam[];
+  mentorshipStartsAt: string | null;
+}) {
   const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.id ?? null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +183,8 @@ export function MentorMeetsByWeek({ teams }: { teams: MentorTeam[] }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  const currentWeek = getCurrentWeekNumber(mentorshipStartsAt);
 
   if (teams.length === 0) {
     return (
@@ -194,19 +212,31 @@ export function MentorMeetsByWeek({ teams }: { teams: MentorTeam[] }) {
         </div>
       )}
 
+      {!mentorshipStartsAt && (
+        <p className="mb-3 rounded-lg border border-line bg-paper px-3 py-2 text-xs text-muted">
+          Week dates and the current-week marker will appear once the Secretary sets the mentorship period&apos;s start
+          date in the Phase Engine.
+        </p>
+      )}
+
       {loading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : (
         <div className="space-y-2">
-          {MEETING_TYPES.map((type, i) => (
-            <WeekCard
-              key={type}
-              weekNumber={i + 1}
-              meeting={meetings.find((m) => m.meeting_type === type)}
-              onConfirmed={load}
-              onScored={load}
-            />
-          ))}
+          {MEETING_TYPES.map((type, i) => {
+            const weekNumber = i + 1;
+            return (
+              <WeekCard
+                key={type}
+                weekNumber={weekNumber}
+                dateRange={mentorshipStartsAt ? formatWeekRange(mentorshipStartsAt, weekNumber) : null}
+                isCurrentWeek={currentWeek === weekNumber}
+                meeting={meetings.find((m) => m.meeting_type === type)}
+                onConfirmed={load}
+                onScored={load}
+              />
+            );
+          })}
         </div>
       )}
     </div>

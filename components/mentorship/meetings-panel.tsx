@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MeetingScoreModal } from "./meeting-score-modal";
 import { AmbassadorScoreModal } from "./ambassador-score-modal";
 import { MEETING_TYPES, getCriteriaForMeetingType } from "@/lib/mentorship/meeting-criteria";
+import { formatWeekRange, getCurrentWeekNumber } from "@/lib/mentorship/week-dates";
 
 type Proposal = {
   id: string;
@@ -63,10 +64,11 @@ export function MeetingsPanel({
   const [scoringMeeting, setScoringMeeting] = useState<Meeting | null>(null);
   const [scoringAmbassadorMeeting, setScoringAmbassadorMeeting] = useState<Meeting | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mentorshipStartsAt, setMentorshipStartsAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: p }, { data: m }] = await Promise.all([
+    const [{ data: p }, { data: m }, { data: phase3Settings }] = await Promise.all([
       supabase
         .from("meeting_proposals")
         .select("id, proposed_date, proposed_time, status, proposed_by")
@@ -79,9 +81,14 @@ export function MeetingsPanel({
         )
         .eq("team_id", teamId)
         .order("meeting_date", { ascending: false }),
+      // phase_number 3 is internally "Phase 3.1 – Mentorship" — the
+      // Secretary sets its Scheduled open date from the Phase Engine, which
+      // anchors the Week 1-8 date ranges / "current week" banner below.
+      supabase.from("phase_settings").select("opens_at").eq("phase_number", 3).maybeSingle(),
     ]);
     setProposals(p ?? []);
     setMeetings(m ?? []);
+    setMentorshipStartsAt(phase3Settings?.opens_at ?? null);
     setLoading(false);
   }, [teamId]);
 
@@ -137,9 +144,16 @@ export function MeetingsPanel({
 
   const pendingProposals = proposals.filter((p) => p.status === "pending");
   const acceptedUnraised = proposals.filter((p) => p.status === "accepted");
+  const currentWeek = getCurrentWeekNumber(mentorshipStartsAt);
 
   return (
     <div className="rounded-2xl border border-line bg-surface p-6">
+      {currentWeek && mentorshipStartsAt && (
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs font-medium text-green-400">
+          <span className="size-2 shrink-0 animate-pulse rounded-full bg-green-500" />
+          Week {currentWeek} is the current mentorship week ({formatWeekRange(mentorshipStartsAt, currentWeek)})
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="font-display text-base font-semibold text-ink">Meetings</h3>
         {role === "ambassador" && (
