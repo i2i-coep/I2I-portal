@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMyTeam } from "@/lib/participant/team";
 import { WeeklyTargets } from "@/components/weekly-targets";
-import { Phase4Panel } from "@/components/participant/workspace-tab";
 
 export default async function ParticipantPhase3Dashboard() {
   const supabase = await createClient();
@@ -57,8 +56,6 @@ export default async function ParticipantPhase3Dashboard() {
       </div>
 
       <WeeklyTargets teamId={team.id} readOnly={false} locked={teamRow?.timeline_locked ?? false} />
-
-      <Phase4Panel teamId={team.id} />
     </div>
   );
 }
