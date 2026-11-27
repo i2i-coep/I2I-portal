@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AssignmentPanel } from "@/components/secretary/assignment-panel";
+import { ReassignmentPanel } from "@/components/secretary/reassignment-panel";
 import { MentorAutoMatchPanel } from "@/components/secretary/mentor-auto-match-panel";
 import { TimelineLockPanel } from "@/components/secretary/timeline-lock-panel";
 
@@ -15,7 +16,7 @@ export default async function Phase3Page() {
 
   const { data: assignments } = await supabase
     .from("project_assignments")
-    .select("team_id, assignment_role");
+    .select("team_id, assignment_role, staff_id, staff_profiles(full_name)");
 
   const fullyAssigned = new Set(
     Object.entries(
@@ -33,6 +34,24 @@ export default async function Phase3Page() {
     .map((f) => f.teams as unknown as { id: string; project_code: string | null; team_name: string } | null)
     .filter((t): t is { id: string; project_code: string | null; team_name: string } => !!t)
     .filter((t) => !fullyAssigned.has(t.id));
+
+  // Every team that has at least one role (mentor and/or ambassador)
+  // already assigned, so the Secretary can reassign or remove it.
+  const { data: assignedTeamRows } = await supabase
+    .from("teams")
+    .select("id, project_code, team_name")
+    .in("id", [...new Set((assignments ?? []).map((a) => a.team_id))]);
+
+  const assignedTeamsForReassignment = (assignedTeamRows ?? []).map((t) => {
+    const rowsForTeam = (assignments ?? []).filter((a) => a.team_id === t.id);
+    const toStaff = (role: string) => {
+      const row = rowsForTeam.find((a) => a.assignment_role === role);
+      if (!row) return null;
+      const staff = row.staff_profiles as unknown as { full_name: string } | null;
+      return { staff_id: row.staff_id, full_name: staff?.full_name ?? "—" };
+    };
+    return { ...t, mentor: toStaff("mentor"), ambassador: toStaff("ambassador") };
+  });
 
   const { data: meetings } = await supabase
     .from("meetings")
@@ -63,6 +82,10 @@ export default async function Phase3Page() {
 
       <div className="mt-6">
         <AssignmentPanel unassignedTeams={unassignedTeams} />
+      </div>
+
+      <div className="mt-6">
+        <ReassignmentPanel assignedTeams={assignedTeamsForReassignment} />
       </div>
 
       <div className="mt-6">

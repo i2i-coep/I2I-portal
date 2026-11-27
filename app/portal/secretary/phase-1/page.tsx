@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Phase1Queue } from "@/components/secretary/phase1-queue";
 import { Phase1ImportPanel } from "@/components/secretary/phase1-import-panel";
 import { Phase1DelegatePanel } from "@/components/secretary/phase1-delegate-panel";
-import { ResendRegistrationEmailsPanel } from "@/components/secretary/resend-registration-emails-panel";
+import { Phase1ReassignPanel } from "@/components/secretary/phase1-reassign-panel";
 
 export default async function Phase1Page() {
   const supabase = await createClient();
@@ -19,7 +19,7 @@ export default async function Phase1Page() {
         .select("id, full_name, role")
         .in("role", ["ambassador", "chief_ambassador"])
         .order("full_name", { ascending: true }),
-      supabase.from("phase1_reviewer_assignments").select("team_id, staff_id"),
+      supabase.from("phase1_reviewer_assignments").select("id, team_id, staff_id"),
     ]);
 
   const submissionByTeamId = new Map((submissions ?? []).map((s) => [s.team_id, s]));
@@ -74,11 +74,27 @@ export default async function Phase1Page() {
     .filter((t) => submittedTeamIds.has(t.id) && !assignedTeamIds.has(t.id))
     .map((t) => ({ id: t.id, project_code: t.project_code, project_name: t.project_name }));
 
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+  const assignments = (assignmentsRaw ?? [])
+    .map((a) => {
+      const team = teamById.get(a.team_id);
+      if (!team) return null;
+      return {
+        assignment_id: a.id,
+        staff_id: a.staff_id,
+        team_id: a.team_id,
+        project_code: team.project_code,
+        project_name: team.project_name,
+        score: team.score,
+      };
+    })
+    .filter((a): a is NonNullable<typeof a> => a !== null);
+
   return (
     <>
       <Phase1ImportPanel />
-      <ResendRegistrationEmailsPanel />
       <Phase1DelegatePanel reviewers={reviewers} unassignedTeams={unassignedTeams} />
+      <Phase1ReassignPanel reviewers={reviewers} assignments={assignments} />
       <Phase1Queue initialTeams={teams} />
     </>
   );
