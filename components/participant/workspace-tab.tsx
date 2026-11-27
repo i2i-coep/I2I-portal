@@ -9,7 +9,7 @@ import { RejectedPanel } from "./rejected-panel";
 import { Phase1SubmissionPanel } from "./phase1-submission-panel";
 import { MeetingsPanel } from "@/components/mentorship/meetings-panel";
 import { TimelinePlanView } from "@/components/mentorship/timeline-plan-view";
-import { DiscussionBoard } from "./discussion-board";
+import { TeamChat } from "@/components/chat/team-chat";
 
 type Phase2Data = {
   id: string | null;
@@ -31,7 +31,7 @@ type Phase2Data = {
   amount_approved: number | null;
 };
 
-type Assignment = { assignment_role: string; staff_name: string };
+type Assignment = { assignment_role: string; staff_name: string; staff_email: string; staff_phone: string | null };
 
 export function WorkspaceTab({ teamId, status }: { teamId: string; status: string }) {
   // Phase 2 (pitch deck submission + review — Phase 1 itself is the external
@@ -889,29 +889,43 @@ function Phase4Panel({ teamId }: { teamId: string }) {
   );
 }
 
+const PHASE3_TABS = ["Dashboard", "My Team", "Meets", "Chat"] as const;
+type Phase3Tab = (typeof PHASE3_TABS)[number];
+
 function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [approvedFunding, setApprovedFunding] = useState<number | null>(null);
   const [locked, setLocked] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [leaderName, setLeaderName] = useState("");
+  const [activeTab, setActiveTab] = useState<Phase3Tab>("Dashboard");
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: assign }, { data: p2 }, { data: team }] = await Promise.all([
+    const [{ data: assign }, { data: p2 }, { data: team }, { data: userRes }] = await Promise.all([
       supabase
         .from("project_assignments")
-        .select("assignment_role, staff_profiles(full_name)")
+        .select("assignment_role, staff_profiles(full_name, email, phone)")
         .eq("team_id", teamId),
       supabase.from("phase2_applications").select("amount_approved").eq("team_id", teamId).maybeSingle(),
-      supabase.from("teams").select("timeline_locked").eq("id", teamId).single(),
+      supabase.from("teams").select("timeline_locked, leader_name").eq("id", teamId).single(),
+      supabase.auth.getUser(),
     ]);
     setAssignments(
-      (assign ?? []).map((a) => ({
-        assignment_role: a.assignment_role,
-        staff_name: (a.staff_profiles as unknown as { full_name: string } | null)?.full_name ?? "—",
-      }))
+      (assign ?? []).map((a) => {
+        const staff = a.staff_profiles as unknown as { full_name: string; email: string; phone: string | null } | null;
+        return {
+          assignment_role: a.assignment_role,
+          staff_name: staff?.full_name ?? "—",
+          staff_email: staff?.email ?? "—",
+          staff_phone: staff?.phone ?? null,
+        };
+      })
     );
     setApprovedFunding(p2?.amount_approved ?? null);
     setLocked(team?.timeline_locked ?? false);
+    setLeaderName(team?.leader_name ?? "");
+    setCurrentUserId(userRes?.user?.id ?? null);
   }, [teamId]);
 
   useEffect(() => {
@@ -938,30 +952,101 @@ function Phase3Panel({ teamId, status }: { teamId: string; status: string }) {
         </div>
       )}
 
-      <div className="grid gap-4 rounded-2xl border border-line bg-surface p-6 sm:grid-cols-3">
-        <div>
-          <p className="text-xs uppercase text-muted">Approved Funding</p>
-          <p className="mt-1 font-display text-lg font-bold text-marigold">
-            {approvedFunding != null ? `₹${approvedFunding}` : "Pending"}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs uppercase text-muted">Assigned Mentor</p>
-          <p className="mt-1 text-sm font-medium text-ink">{mentor?.staff_name ?? "Not yet assigned"}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase text-muted">Assigned Ambassador</p>
-          <p className="mt-1 text-sm font-medium text-ink">{ambassador?.staff_name ?? "Not yet assigned"}</p>
-        </div>
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-surface p-1">
+        {PHASE3_TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`shrink-0 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+              activeTab === tab ? "bg-marigold text-ink" : "text-ink-light hover:bg-paper"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      <WeeklyTargets teamId={teamId} readOnly={false} locked={locked} />
+      {activeTab === "Dashboard" && (
+        <div className="space-y-4">
+          <div className="grid gap-4 rounded-2xl border border-line bg-surface p-6 sm:grid-cols-3">
+            <div>
+              <p className="text-xs uppercase text-muted">Approved Funding</p>
+              <p className="mt-1 font-display text-lg font-bold text-marigold">
+                {approvedFunding != null ? `₹${approvedFunding}` : "Pending"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-muted">Assigned Mentor</p>
+              <p className="mt-1 text-sm font-medium text-ink">{mentor?.staff_name ?? "Not yet assigned"}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-muted">Assigned Ambassador</p>
+              <p className="mt-1 text-sm font-medium text-ink">{ambassador?.staff_name ?? "Not yet assigned"}</p>
+            </div>
+          </div>
+          <WeeklyTargets teamId={teamId} readOnly={false} locked={locked} />
+        </div>
+      )}
 
-      <MeetingsPanel teamId={teamId} role="participant" />
+      {activeTab === "My Team" && (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-line bg-surface p-6">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-marigold">Assigned Mentor</p>
+            {mentor ? (
+              <table className="w-full border-collapse">
+                <tbody>
+                  <tr className="border-b border-line">
+                    <td className="w-32 py-1.5 text-xs font-semibold uppercase text-muted">Name</td>
+                    <td className="py-1.5 text-sm text-ink">{mentor.staff_name}</td>
+                  </tr>
+                  <tr className="border-b border-line">
+                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Email</td>
+                    <td className="py-1.5 text-sm text-ink">{mentor.staff_email}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Phone</td>
+                    <td className="py-1.5 text-sm text-ink">{mentor.staff_phone ?? "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-muted">Not yet assigned.</p>
+            )}
 
-      <DiscussionBoard teamId={teamId} />
+            <p className="mb-2 mt-5 text-xs font-semibold uppercase tracking-widest text-sky-400">Assigned Ambassador</p>
+            {ambassador ? (
+              <table className="w-full border-collapse">
+                <tbody>
+                  <tr className="border-b border-line">
+                    <td className="w-32 py-1.5 text-xs font-semibold uppercase text-muted">Name</td>
+                    <td className="py-1.5 text-sm text-ink">{ambassador.staff_name}</td>
+                  </tr>
+                  <tr className="border-b border-line">
+                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Email</td>
+                    <td className="py-1.5 text-sm text-ink">{ambassador.staff_email}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-xs font-semibold uppercase text-muted">Phone</td>
+                    <td className="py-1.5 text-sm text-ink">{ambassador.staff_phone ?? "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-muted">Not yet assigned.</p>
+            )}
+          </div>
 
-      <TimelinePlanView teamId={teamId} readOnly={false} />
+          <TimelinePlanView teamId={teamId} readOnly={false} />
+        </div>
+      )}
+
+      {activeTab === "Meets" && <MeetingsPanel teamId={teamId} role="participant" />}
+
+      {activeTab === "Chat" && currentUserId && (
+        <div className="h-[560px]">
+          <TeamChat teamId={teamId} currentUserId={currentUserId} currentUserName={leaderName} role="participant" />
+        </div>
+      )}
     </div>
   );
 }
